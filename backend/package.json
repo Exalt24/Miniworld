@@ -1,0 +1,32 @@
+{
+  "name": "miniworld-backend",
+  "version": "1.0.0",
+  "description": "Backend event indexer and REST API for MiniWorld game",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migrate": "tsx migrations/run.ts",
+    "test": "echo \"Tests TBD\" && exit 0"
+  },
+  "keywords": ["blockchain", "gaming", "web3", "event-indexer"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.13.1",
+    "socket.io": "^4.8.1",
+    "ethers": "^6.13.7",
+    "dotenv": "^16.4.7",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.10.2",
+    "@types/express": "^5.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/cors": "^2.8.17",
+    "tsx": "^4.19.2"
+  }
+}

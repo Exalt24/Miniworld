@@ -1,0 +1,24 @@
+{
+  "name": "miniworld-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for MiniWorld game - abstracts Web3 complexity",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prebuild": "node scripts/copy-abi.js",
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["sdk", "web3", "gaming", "blockchain", "miniworld"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.13.7",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.10.2"
+  }
+}
