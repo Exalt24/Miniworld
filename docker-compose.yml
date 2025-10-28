@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: miniworld-postgres
+    environment:
+      POSTGRES_DB: miniworld
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - miniworld-network
+    restart: unless-stopped
+
+  contracts:
+    build:
+      context: .
+      dockerfile: docker/contracts.Dockerfile
+    container_name: miniworld-contracts
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./contracts:/app
+      - /app/node_modules
+    command: npx hardhat node
+    environment:
+      NODE_ENV: development
+    networks:
+      - miniworld-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: miniworld-backend
+    environment:
+      PORT: 4000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: miniworld
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      RPC_URL: http://contracts:8545
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-}
+      CHAIN_ID: 31337
+      START_BLOCK: 0
+      GRID_SIZE: 10
+      CORS_ORIGIN: "*"
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/migrations:/app/migrations
+      - ./contracts/artifacts:/app/artifacts
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      contracts:
+        condition: service_started
+    networks:
+      - miniworld-network
+    restart: unless-stopped
+
+  game-client:
+    build:
+      context: .
+      dockerfile: docker/game-client.Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+        VITE_WS_URL: ${VITE_WS_URL:-http://localhost:4000}
+        VITE_CONTRACT_ADDRESS: ${VITE_CONTRACT_ADDRESS:-}
+    container_name: miniworld-game-client
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./game-client/src:/app/src
+      - ./game-client/public:/app/public
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    environment:
+      NODE_ENV: development
+    depends_on:
+      - backend
+    networks:
+      - miniworld-network
+    restart: unless-stopped
+
+  creator-dashboard:
+    build:
+      context: .
+      dockerfile: docker/creator-dashboard.Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+        VITE_WS_URL: ${VITE_WS_URL:-http://localhost:4000}
+        VITE_CONTRACT_ADDRESS: ${VITE_CONTRACT_ADDRESS:-}
+    container_name: miniworld-creator-dashboard
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./creator-dashboard/src:/app/src
+      - ./creator-dashboard/public:/app/public
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 3001
+    environment:
+      NODE_ENV: development
+    depends_on:
+      - backend
+    networks:
+      - miniworld-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  miniworld-network:
+    driver: bridge

@@ -1,0 +1,32 @@
+{
+  "name": "miniworld-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for MiniWorld blockchain game",
+  "type": "module",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy": "hardhat ignition deploy ignition/modules/MiniWorld.ts --network localhost",
+    "deploy:update": "npm run deploy && tsx scripts/update-env.ts",
+    "deploy:quick": "hardhat run scripts/deploy-quick.ts --network localhost",
+    "update-env": "tsx scripts/update-env.ts",
+    "clean": "hardhat clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["solidity", "ethereum", "smart-contracts", "hardhat", "gaming"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "hardhat": "^3.0.7",
+    "ethers": "^6.13.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^3.0.1",
+    "@types/node": "^22.10.2",
+    "@types/mocha": "^10.0.10",
+    "tsx": "^4.19.2"
+  }
+}

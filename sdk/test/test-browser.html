@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniWorld SDK - Complete Test Suite</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status.disconnected {
+      background: #fee;
+      color: #c33;
+    }
+
+    .status.disconnected .status-indicator {
+      background: #dc3545;
+    }
+
+    .status.connecting {
+      background: #ffeaa7;
+      color: #d63031;
+    }
+
+    .status.connecting .status-indicator {
+      background: #ffc107;
+    }
+
+    .status.connected {
+      background: #dfe;
+      color: #3c3;
+    }
+
+    .status.connected .status-indicator {
+      background: #28a745;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 1400px) {
+      .main-content {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .panel h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      opacity: 0.6;
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    button.success {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    button.warning {
+      background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    }
+
+    .info-box {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .info-box strong {
+      color: #667eea;
+    }
+
+    .ws-box {
+      background: #e3f2fd;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      border-left: 4px solid #2196f3;
+    }
+
+    .log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      border-radius: 3px;
+    }
+
+    .log-entry.success {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+    }
+
+    .log-entry.error {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
+
+    .log-entry.info {
+      background: rgba(33, 150, 243, 0.2);
+      color: #2196f3;
+    }
+
+    .log-entry.event {
+      background: rgba(156, 39, 176, 0.2);
+      color: #9c27b0;
+    }
+
+    .log-entry.pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+
+    .timestamp {
+      color: #888;
+      margin-right: 8px;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .api-results {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .input-group input,
+    .input-group select {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .tx-status {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .tx-status.success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+    }
+
+    .tx-status.error {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      color: #721c24;
+    }
+
+    .tx-status.pending {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      color: #856404;
+    }
+
+    .events-feed {
+      background: white;
+      border-radius: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+
+    .event-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      border-left: 4px solid #667eea;
+    }
+
+    .event-item.own {
+      background: #e3f2fd;
+      border-left-color: #2196f3;
+    }
+
+    .event-item.other {
+      background: #f3e5f5;
+      border-left-color: #9c27b0;
+    }
+
+    .event-item .event-time {
+      font-size: 11px;
+      color: #666;
+      margin-right: 8px;
+    }
+
+    .event-item .event-type {
+      font-weight: bold;
+      margin-right: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 30px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎮 MiniWorld SDK - Complete Test Suite</h1>
+      <p class="subtitle">Testing Wallet, API, Transactions, and Real-Time WebSocket Events</p>
+      <div class="status-bar">
+        <span class="status disconnected" id="wallet-status">
+          <span class="status-indicator"></span>
+          Wallet: Disconnected
+        </span>
+        <span class="status disconnected" id="ws-status">
+          <span class="status-indicator"></span>
+          WebSocket: Disconnected
+        </span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Wallet Panel -->
+      <div class="panel">
+        <h2>💳 Wallet Connection</h2>
+        <div class="info-box" id="connection-info">
+          <strong>Status:</strong> Not connected<br>
+          <strong>Address:</strong> None<br>
+          <strong>MetaMask:</strong> <span id="metamask-status">Checking...</span>
+        </div>
+        <div class="button-group">
+          <button id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+          <button id="disconnect-btn" onclick="disconnectWallet()" disabled>Disconnect</button>
+        </div>
+        <div class="button-group">
+          <button class="secondary" onclick="testUtilityFunctions()">Test Utilities</button>
+        </div>
+      </div>
+
+      <!-- WebSocket Panel -->
+      <div class="panel">
+        <h2>🔌 WebSocket Status</h2>
+        <div class="ws-box">
+          <strong>Connection:</strong> <span id="ws-connection-status">Disconnected</span><br>
+          <strong>Events Received:</strong> <span id="ws-event-count">0</span>
+        </div>
+        <div class="button-group">
+          <button id="ws-connect-btn" onclick="connectWebSocket()">Connect WebSocket</button>
+          <button id="ws-disconnect-btn" onclick="disconnectWebSocket()">Disconnect</button>
+        </div>
+        <div class="button-group">
+          <button class="warning" onclick="openSecondWindow()">Open Second Window 🪟</button>
+        </div>
+        <div class="info-box" style="font-size: 12px;">
+          💡 <strong>Multi-Player Test:</strong> Open a second window to see real-time updates when other players interact!
+        </div>
+      </div>
+
+      <!-- Live Events Panel -->
+      <div class="panel">
+        <h2>🔔 Live Events <span class="badge" id="event-counter">0</span></h2>
+        <div id="realtime-events" class="events-feed">
+          <div class="empty-state">
+            No events yet. Connect WebSocket to see live updates!
+          </div>
+        </div>
+        <button class="danger" onclick="clearEvents()">Clear Events</button>
+      </div>
+
+      <!-- API Testing Panel -->
+      <div class="panel">
+        <h2>🌐 API Read Operations</h2>
+        <div class="button-group">
+          <button onclick="testGetWorldState()">Get World State</button>
+          <button onclick="testGetStats()">Get Stats</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="tile-id-read" placeholder="Tile ID (0-99)" value="42" min="0" max="99">
+          <button onclick="testGetTile()">Get Tile</button>
+        </div>
+        <div class="button-group">
+          <button onclick="testGetPlayerTiles()" id="my-tiles-btn" disabled>My Tiles</button>
+          <button onclick="testGetPlayerStats()" id="my-stats-btn" disabled>My Stats</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="activity-limit" placeholder="Limit" value="50" min="1" max="200">
+          <button onclick="testGetActivity()">Get Activity</button>
+        </div>
+        <div class="button-group">
+          <button onclick="testGetSyncStatus()">Sync Status</button>
+          <button class="secondary" onclick="testAllAPI()">Test All APIs</button>
+        </div>
+      </div>
+
+      <!-- Blockchain Write Operations Panel -->
+      <div class="panel">
+        <h2>⛓️ Blockchain Transactions</h2>
+        <div id="tx-status-display"></div>
+        
+        <strong>Claim Tile:</strong>
+        <div class="input-group">
+          <input type="number" id="tile-id-claim" placeholder="Tile ID" value="5" min="0" max="99">
+          <button class="success" onclick="claimTile()" id="claim-btn" disabled>Claim Tile</button>
+        </div>
+
+        <strong>Place Item:</strong>
+        <div class="input-group">
+          <input type="number" id="tile-id-place" placeholder="Tile ID" value="5" min="0" max="99">
+          <select title="Item Type" id="item-type">
+            <option value="0">Empty</option>
+            <option value="1" selected>Tree</option>
+            <option value="2">Rock</option>
+            <option value="3">Flag</option>
+            <option value="4">Building</option>
+            <option value="5">Water</option>
+          </select>
+        </div>
+        <button class="success" onclick="placeItem()" id="place-btn" disabled style="width: 100%; margin-bottom: 12px;">Place Item</button>
+
+        <strong>Remove Item:</strong>
+        <div class="input-group">
+          <input type="number" id="tile-id-remove" placeholder="Tile ID" value="5" min="0" max="99">
+          <button class="danger" onclick="removeItem()" id="remove-btn" disabled>Remove Item</button>
+        </div>
+      </div>
+
+      <!-- API Results Panel -->
+      <div class="panel">
+        <h2>📊 API Results</h2>
+        <div class="api-results" id="api-results">API results will appear here...</div>
+      </div>
+
+      <!-- Activity Log Panel -->
+      <div class="panel full-width">
+        <h2>📝 Activity Log</h2>
+        <div class="log" id="activity-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "ethers": "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.min.js",
+      "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket.io.esm.min.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import { MiniWorldSDK, ItemType } from '../dist/index.js';
+
+    let sdk;
+    let wsEventCount = 0;
+    let realtimeEventCount = 0;
+
+    function updateWalletStatus(connected, address = null) {
+      const statusEl = document.getElementById('wallet-status');
+      const infoEl = document.getElementById('connection-info');
+      
+      if (connected && address) {
+        statusEl.className = 'status connected';
+        statusEl.innerHTML = `<span class="status-indicator"></span>Wallet: Connected`;
+        infoEl.innerHTML = `
+          <strong>Status:</strong> Connected<br>
+          <strong>Address:</strong> ${address.slice(0, 6)}...${address.slice(-4)}<br>
+          <strong>MetaMask:</strong> Detected ✓
+        `;
+        document.getElementById('connect-btn').disabled = true;
+        document.getElementById('disconnect-btn').disabled = false;
+        document.getElementById('my-tiles-btn').disabled = false;
+        document.getElementById('my-stats-btn').disabled = false;
+        setTxButtonsEnabled(true);
+      } else {
+        statusEl.className = 'status disconnected';
+        statusEl.innerHTML = `<span class="status-indicator"></span>Wallet: Disconnected`;
+        infoEl.innerHTML = `
+          <strong>Status:</strong> Not connected<br>
+          <strong>Address:</strong> None<br>
+          <strong>MetaMask:</strong> ${typeof window.ethereum !== 'undefined' ? 'Detected ✓' : 'Not detected ✗'}
+        `;
+        document.getElementById('connect-btn').disabled = false;
+        document.getElementById('disconnect-btn').disabled = true;
+        document.getElementById('my-tiles-btn').disabled = true;
+        document.getElementById('my-stats-btn').disabled = true;
+        setTxButtonsEnabled(false);
+      }
+    }
+
+    function updateWebSocketStatus(connected) {
+      const statusEl = document.getElementById('ws-status');
+      const connectionEl = document.getElementById('ws-connection-status');
+      
+      if (connected) {
+        statusEl.className = 'status connected';
+        statusEl.innerHTML = `<span class="status-indicator"></span>WebSocket: Connected`;
+        connectionEl.textContent = 'Connected ✓';
+      } else {
+        statusEl.className = 'status disconnected';
+        statusEl.innerHTML = `<span class="status-indicator"></span>WebSocket: Disconnected`;
+        connectionEl.textContent = 'Disconnected';
+      }
+    }
+
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('activity-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.innerHTML = `<span class="timestamp">[${timestamp}]</span>${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function displayAPIResult(data) {
+      document.getElementById('api-results').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function displayTxStatus(message, type = 'pending') {
+      const statusEl = document.getElementById('tx-status-display');
+      statusEl.innerHTML = `<div class="tx-status ${type}">${message}</div>`;
+      
+      if (type !== 'pending') {
+        setTimeout(() => {
+          statusEl.innerHTML = '';
+        }, 10000);
+      }
+    }
+
+    function setTxButtonsEnabled(enabled) {
+      document.getElementById('claim-btn').disabled = !enabled;
+      document.getElementById('place-btn').disabled = !enabled;
+      document.getElementById('remove-btn').disabled = !enabled;
+    }
+
+    function addRealtimeEvent(eventType, data, isOwn = false) {
+      realtimeEventCount++;
+      document.getElementById('event-counter').textContent = realtimeEventCount;
+      document.getElementById('ws-event-count').textContent = ++wsEventCount;
+
+      const container = document.getElementById('realtime-events');
+      
+      if (container.querySelector('.empty-state')) {
+        container.innerHTML = '';
+      }
+
+      const eventItem = document.createElement('div');
+      eventItem.className = `event-item ${isOwn ? 'own' : 'other'}`;
+      
+      const timestamp = new Date().toLocaleTimeString();
+      const icon = isOwn ? '🔵' : '🟣';
+      const actor = isOwn ? 'You' : 'Other';
+      
+      let message = `<span class="event-time">[${timestamp}]</span><span class="event-type">${icon} ${actor}: ${eventType}</span>`;
+      
+      if (data.tileId !== undefined) {
+        message += ` - Tile ${data.tileId}`;
+      }
+      if (data.itemType !== undefined) {
+        const itemNames = ['Empty', 'Tree', 'Rock', 'Flag', 'Building', 'Water'];
+        message += ` (${itemNames[data.itemType]})`;
+      }
+      if (data.owner && !isOwn) {
+        message += ` by ${data.owner.slice(0, 6)}...${data.owner.slice(-4)}`;
+      }
+
+      eventItem.innerHTML = message;
+      container.insertBefore(eventItem, container.firstChild);
+
+      if (container.children.length > 20) {
+        container.removeChild(container.lastChild);
+      }
+    }
+
+    window.clearEvents = function() {
+      document.getElementById('realtime-events').innerHTML = '<div class="empty-state">Events cleared.</div>';
+      realtimeEventCount = 0;
+      wsEventCount = 0;
+      document.getElementById('event-counter').textContent = '0';
+      document.getElementById('ws-event-count').textContent = '0';
+      log('✓ Cleared real-time events', 'info');
+    };
+
+    window.openSecondWindow = function() {
+      window.open(window.location.href, '_blank', 'width=1200,height=800');
+      log('✓ Opened second window for multi-player testing', 'info');
+    };
+
+    // Initialize SDK
+    function initSDK() {
+      try {
+        sdk = new MiniWorldSDK({
+          contractAddress: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+          apiUrl: 'http://localhost:4000/api',
+          wsUrl: 'http://localhost:4000',
+          autoConnectWebSocket: true
+        });
+        window.sdk = sdk;
+
+        // Wallet event listeners
+        sdk.on('connected', (data) => {
+          log(`✓ Wallet connected: ${data.address}`, 'success');
+          updateWalletStatus(true, data.address);
+        });
+
+        sdk.on('disconnected', () => {
+          log('✓ Wallet disconnected', 'info');
+          updateWalletStatus(false);
+        });
+
+        sdk.on('accountChanged', (data) => {
+          log(`✓ Account changed: ${data.address}`, 'event');
+          updateWalletStatus(true, data.address);
+        });
+
+        // WebSocket event listeners
+        sdk.on('wsConnected', () => {
+          log('✓ WebSocket connected', 'success');
+          updateWebSocketStatus(true);
+        });
+
+        sdk.on('wsDisconnected', (data) => {
+          log(`✓ WebSocket disconnected: ${data.reason}`, 'info');
+          updateWebSocketStatus(false);
+        });
+
+        // Transaction event listeners
+        sdk.on('transactionStarted', (data) => {
+          log(`🔄 Transaction started: ${data.type} (Tile ${data.tileId})`, 'pending');
+          displayTxStatus(`⏳ Preparing transaction...`, 'pending');
+          setTxButtonsEnabled(false);
+        });
+
+        sdk.on('transactionSubmitted', (data) => {
+          log(`📤 Transaction submitted: ${data.hash}`, 'pending');
+          displayTxStatus(`⏳ Waiting for confirmation... TX: ${data.hash.slice(0, 10)}...`, 'pending');
+        });
+
+        sdk.on('transactionConfirmed', (data) => {
+          log(`✅ Transaction confirmed! Block ${data.blockNumber}, Gas: ${data.gasUsed}`, 'success');
+          displayTxStatus(`✅ Transaction confirmed! Block: ${data.blockNumber}`, 'success');
+          setTxButtonsEnabled(true);
+          addRealtimeEvent(data.type, data, true);
+        });
+
+        sdk.on('transactionFailed', (data) => {
+          log(`❌ Transaction failed: ${data.error}`, 'error');
+          displayTxStatus(`❌ Transaction failed: ${data.error}`, 'error');
+          setTxButtonsEnabled(true);
+        });
+
+        // Real-time game events from other players
+        sdk.on('tileClaimed', (data) => {
+          log(`🔔 Tile ${data.tileId} claimed by ${data.owner.slice(0, 6)}...${data.owner.slice(-4)}`, 'event');
+          addRealtimeEvent('Tile Claimed', data, false);
+        });
+
+        sdk.on('itemPlaced', (data) => {
+          log(`🔔 Item placed on tile ${data.tileId} by ${data.owner.slice(0, 6)}...${data.owner.slice(-4)}`, 'event');
+          addRealtimeEvent('Item Placed', data, false);
+        });
+
+        sdk.on('itemRemoved', (data) => {
+          log(`🔔 Item removed from tile ${data.tileId} by ${data.owner.slice(0, 6)}...${data.owner.slice(-4)}`, 'event');
+          addRealtimeEvent('Item Removed', data, false);
+        });
+
+        sdk.on('worldUpdate', () => {
+          log(`🔔 World state updated`, 'event');
+        });
+
+        sdk.on('error', (error) => {
+          log(`❌ Error: ${error.message}`, 'error');
+        });
+
+        log('✓ SDK initialized successfully', 'success');
+        updateWalletStatus(false);
+        updateWebSocketStatus(sdk.isWebSocketConnected());
+        setTxButtonsEnabled(false);
+      } catch (error) {
+        log(`❌ Failed to initialize SDK: ${error.message}`, 'error');
+      }
+    }
+
+    // Wallet functions
+    window.connectWallet = async function() {
+      try {
+        await sdk.connect();
+      } catch (error) {
+        log(`❌ Connection failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.disconnectWallet = function() {
+      sdk.disconnect();
+    };
+
+    window.testUtilityFunctions = function() {
+      log('Testing utility functions...', 'info');
+      try {
+        const tileId = MiniWorldSDK.coordsToTileId(4, 2);
+        log(`✓ coordsToTileId(4, 2) = ${tileId}`, 'success');
+        
+        const coords = MiniWorldSDK.tileIdToCoords(42);
+        log(`✓ tileIdToCoords(42) = (${coords.x}, ${coords.y})`, 'success');
+        
+        log('✓ All utility functions passed!', 'success');
+      } catch (error) {
+        log(`❌ Utility test failed: ${error.message}`, 'error');
+      }
+    };
+
+    // WebSocket functions
+    window.connectWebSocket = function() {
+      try {
+        sdk.initializeWebSocket();
+        log('✓ WebSocket connection initiated', 'info');
+      } catch (error) {
+        log(`❌ WebSocket connection failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.disconnectWebSocket = function() {
+      sdk.disconnectWebSocket();
+      log('✓ WebSocket disconnected', 'info');
+      updateWebSocketStatus(false);
+    };
+
+    // API functions
+    window.testGetWorldState = async function() {
+      try {
+        log('Fetching world state...', 'info');
+        const worldState = await sdk.getWorldState();
+        log(`✓ World state: ${worldState.tiles.length} tiles`, 'success');
+        displayAPIResult(worldState);
+      } catch (error) {
+        log(`❌ getWorldState failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetTile = async function() {
+      try {
+        const tileId = parseInt(document.getElementById('tile-id-read').value);
+        log(`Fetching tile ${tileId}...`, 'info');
+        const tile = await sdk.getTile(tileId);
+        log(`✓ Tile ${tileId}: ${tile.itemTypeName}`, 'success');
+        displayAPIResult(tile);
+      } catch (error) {
+        log(`❌ getTile failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetPlayerTiles = async function() {
+      try {
+        log('Fetching your tiles...', 'info');
+        const playerTiles = await sdk.getPlayerTiles();
+        log(`✓ You own ${playerTiles.totalTiles} tiles`, 'success');
+        displayAPIResult(playerTiles);
+      } catch (error) {
+        log(`❌ getPlayerTiles failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetActivity = async function() {
+      try {
+        const limit = parseInt(document.getElementById('activity-limit').value);
+        log(`Fetching activity (limit ${limit})...`, 'info');
+        const activity = await sdk.getActivity(limit);
+        log(`✓ Fetched ${activity.count} events`, 'success');
+        displayAPIResult(activity);
+      } catch (error) {
+        log(`❌ getActivity failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetStats = async function() {
+      try {
+        log('Fetching game stats...', 'info');
+        const stats = await sdk.getStats();
+        log(`✓ Stats: ${stats.totalClaims} claims, ${stats.uniquePlayers} players`, 'success');
+        displayAPIResult(stats);
+      } catch (error) {
+        log(`❌ getStats failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetPlayerStats = async function() {
+      try {
+        log('Fetching your stats...', 'info');
+        const playerStats = await sdk.getPlayerStats();
+        log(`✓ Your stats: ${playerStats.tilesOwned} tiles owned`, 'success');
+        displayAPIResult(playerStats);
+      } catch (error) {
+        log(`❌ getPlayerStats failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGetSyncStatus = async function() {
+      try {
+        log('Fetching sync status...', 'info');
+        const syncStatus = await sdk.getSyncStatus();
+        log(`✓ Synced to block ${syncStatus.lastSyncedBlock}`, 'success');
+        displayAPIResult(syncStatus);
+      } catch (error) {
+        log(`❌ getSyncStatus failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testAllAPI = async function() {
+      log('='.repeat(50), 'info');
+      log('Testing all API endpoints...', 'info');
+      
+      await testGetWorldState();
+      await new Promise(r => setTimeout(r, 500));
+      
+      await testGetStats();
+      await new Promise(r => setTimeout(r, 500));
+      
+      await testGetTile();
+      await new Promise(r => setTimeout(r, 500));
+      
+      await testGetActivity();
+      await new Promise(r => setTimeout(r, 500));
+      
+      await testGetSyncStatus();
+      
+      log('✓ All API tests completed!', 'success');
+      log('='.repeat(50), 'info');
+    };
+
+    // Blockchain write functions
+    window.claimTile = async function() {
+      try {
+        const tileId = parseInt(document.getElementById('tile-id-claim').value);
+        await sdk.claimTile(tileId);
+      } catch (error) {
+        log(`❌ ${error.message}`, 'error');
+      }
+    };
+
+    window.placeItem = async function() {
+      try {
+        const tileId = parseInt(document.getElementById('tile-id-place').value);
+        const itemType = parseInt(document.getElementById('item-type').value);
+        await sdk.placeItem(tileId, itemType);
+      } catch (error) {
+        log(`❌ ${error.message}`, 'error');
+      }
+    };
+
+    window.removeItem = async function() {
+      try {
+        const tileId = parseInt(document.getElementById('tile-id-remove').value);
+        await sdk.removeItem(tileId);
+      } catch (error) {
+        log(`❌ ${error.message}`, 'error');
+      }
+    };
+
+    // Initialize on page load
+    initSDK();
+  </script>
+</body>
+</html>

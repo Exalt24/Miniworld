@@ -1,0 +1,61 @@
+# Dependencies
+**/node_modules/
+**/npm-debug.log
+**/yarn-error.log
+**/package-lock.json
+
+# Build outputs (but keep artifacts and SDK dist!)
+backend/dist/
+game-client/dist/
+creator-dashboard/dist/
+**/*.tsbuildinfo
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+
+# IDE
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/.DS_Store
+**/Thumbs.db
+
+# Blockchain cache (but keep artifacts!)
+contracts/cache/
+contracts/types/
+
+# Testing
+**/coverage/
+**/*.test.ts
+**/*.spec.ts
+
+# Logs
+**/logs/
+**/*.log
+
+# Git
+**/.git/
+**/.gitignore
+
+# Docker files
+**/Dockerfile
+**/docker-compose*.yml
+**/.dockerignore
+
+# Documentation
+**/README.md
+**/docs/
+
+# Scripts
+**/scripts/
+
+# Vite cache
+**/.vite/
+
+# IMPORTANT: DO NOT IGNORE THESE!
+# contracts/artifacts/ - NEEDED for ABI
+# contracts/ignition/deployments/ - NEEDED for contract addresses
+# sdk/dist/ - NEEDED by frontends
