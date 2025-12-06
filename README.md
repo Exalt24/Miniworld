@@ -2,11 +2,6 @@
 
 A production-ready full-stack Web3 game demonstrating multiplayer on-chain mechanics, real-time state synchronization, creator analytics, and SDK abstraction.
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
-![React](https://img.shields.io/badge/React-19.2-61dafb)
-![Solidity](https://img.shields.io/badge/Solidity-0.8.30-363636)
-![Node.js](https://img.shields.io/badge/Node.js-22.20-339933)
-
 ---
 
 ## 📋 Table of Contents
