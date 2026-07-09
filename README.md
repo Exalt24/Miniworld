@@ -7,6 +7,7 @@ A production-ready full-stack Web3 game demonstrating multiplayer on-chain mecha
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Documentation](#documentation)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start-docker)
 - [Project Structure](#project-structure)
@@ -29,6 +30,17 @@ MiniWorld is a 10x10 grid-based autonomous world where players claim tiles and p
 - 📊 **Creator Dashboard** - Analytics and monitoring tools with Recharts visualizations
 - 🛠 **Developer SDK** - Complete Web3 abstraction with bundled contract ABI
 - 🐳 **Docker Deployment** - Complete stack in containers with one command
+
+---
+
+## 📚 Documentation
+
+Deep-dive docs live in the [`docs/`](docs) directory and the SDK folder:
+
+- **[API Reference](docs/API.md)** - Full REST endpoint and WebSocket event reference
+- **[Architecture](docs/ARCHITECTURE.md)** - System design, data flow, and the ABI distribution pipeline
+- **[Deployment](docs/DEPLOYMENT.md)** - Container orchestration and production deployment guide
+- **[SDK Guide](sdk/README.md)** - Installation, usage, and the full MiniWorld SDK API
 
 ---
 
@@ -176,8 +188,7 @@ miniworld/
 │   ├── docker-deploy-all.ps1      # Main deployment script
 │   └── docker-status.ps1          # Status dashboard (optional)
 │
-├── docker-compose.yml     # Base service configuration
-├── docker-compose.dev.yml # Development overrides
+├── docker-compose.yml     # Base service configuration (dev overrides baked in)
 └── docker-compose.prod.yml# Production configuration
 ```
 
@@ -667,8 +678,8 @@ This is a demonstration project showcasing blockchain gaming architecture.
 ### To Run Locally
 ```powershell
 # 1. Clone repository
-git clone <repository-url>
-cd miniworld
+git clone https://github.com/Exalt24/Miniworld.git
+cd Miniworld
 
 # 2. Deploy with Docker
 .\scripts\docker-deploy-all.ps1
