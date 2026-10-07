@@ -1,302 +1,200 @@
-# MiniWorld - Blockchain Gaming Platform
+# MiniWorld
 
-A production-ready full-stack Web3 game demonstrating multiplayer on-chain mechanics, real-time state synchronization, creator analytics, and SDK abstraction.
+A small multiplayer Web3 game on a local Ethereum chain. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker. It has not been deployed to a public network.
 
----
-
-## 📋 Table of Contents
+## Contents
 
 - [Overview](#overview)
 - [Documentation](#documentation)
 - [Architecture](#architecture)
-- [Quick Start](#quick-start-docker)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-- [API Reference](#api-reference)
+- [Quick start](#quick-start)
+- [Project structure](#project-structure)
+- [Development workflow](#development-workflow)
+- [API reference](#api-reference)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
-- [Tech Stack](#tech-stack)
+- [Tech stack](#tech-stack)
 
----
+## Overview
 
-## 🎮 Overview
+- Game state lives in the `MiniWorld.sol` contract: tile ownership and item placement
+- A WebSocket feed (Socket.IO) pushes tile and item events to every connected client
+- The player client is a React 19 app that draws the board on a canvas
+- The creator dashboard shows activity and statistics with Recharts
+- The SDK exposes contract calls, REST reads and WebSocket events, and has the contract ABI bundled at build time
+- Docker Compose runs everything with one script
 
-MiniWorld is a 10x10 grid-based autonomous world where players claim tiles and place items on-chain.
+## Documentation
 
-### Key Features
+- [API reference](docs/API.md): REST endpoints and WebSocket events
+- [Architecture](docs/ARCHITECTURE.md): system design, data flow and how the ABI gets distributed
+- [Deployment](docs/DEPLOYMENT.md): container orchestration and notes on deploying beyond a local machine
+- [SDK guide](sdk/README.md): installation, usage and the SDK API
 
-- ⛓️ **Smart Contract Logic** - All game state lives on Ethereum
-- 🔄 **Real-Time Sync** - WebSocket updates across all clients (<100ms latency)
-- 🎮 **Player Client** - React 19 game interface with Canvas rendering
-- 📊 **Creator Dashboard** - Analytics and monitoring tools with Recharts visualizations
-- 🛠 **Developer SDK** - Complete Web3 abstraction with bundled contract ABI
-- 🐳 **Docker Deployment** - Complete stack in containers with one command
+## Architecture
 
----
-
-## 📚 Documentation
-
-Deep-dive docs live in the [`docs/`](docs) directory and the SDK folder:
-
-- **[API Reference](docs/API.md)** - Full REST endpoint and WebSocket event reference
-- **[Architecture](docs/ARCHITECTURE.md)** - System design, data flow, and the ABI distribution pipeline
-- **[Deployment](docs/DEPLOYMENT.md)** - Container orchestration and production deployment guide
-- **[SDK Guide](sdk/README.md)** - Installation, usage, and the full MiniWorld SDK API
-
----
-
-## 🏗️ Architecture
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     Browser Layer                        │
+│                     Browser layer                        │
 ├─────────────────────────────────────────────────────────┤
-│  Game Client (3000)  │  Creator Dashboard (3001)        │
-│  • Canvas Game Board │  • Analytics Charts              │
-│  • Real-time Updates │  • Event Log                     │
-│  • SDK Integration   │  • Player Management             │
+│  Game client (3000)  │  Creator dashboard (3001)        │
+│  • Canvas game board │  • Analytics charts              │
+│  • Real-time updates │  • Event log                     │
+│  • SDK integration   │  • Player management             │
 └────────────┬────────────────────────┬───────────────────┘
              │                        │
-             │   MiniWorld SDK (bundled into frontends)   
-             │   • Contract ABI baked in at build time    
-             │   • WebSocket client                       
-             │   • Transaction handling                   
+             │   MiniWorld SDK (bundled into frontends)
+             │   • Contract ABI baked in at build time
+             │   • WebSocket client
+             │   • Transaction handling
              │                        │
 ┌────────────┴────────────────────────┴───────────────────┐
-│                   Backend Layer                          │
+│                   Backend layer                          │
 ├─────────────────────────────────────────────────────────┤
 │  Backend API (4000)                                     │
 │  • REST API (8 endpoints)                               │
-│  • WebSocket Server (Socket.IO)                         │
-│  • Event Indexer                                        │
+│  • WebSocket server (Socket.IO)                         │
+│  • Event indexer                                        │
 │  • Contract ABI loaded from build                       │
 └────────────┬──────────────────┬─────────────────────────┘
              │                  │
     ┌────────┴────────┐  ┌─────┴──────────┐
-    │  PostgreSQL 18   │  │  Hardhat Node  │
-    │  • World State   │  │  • Smart       │
-    │  • Event Log     │  │    Contracts   │
-    │  • Stats Cache   │  │  • Local EVM   │
+    │  PostgreSQL 18   │  │  Hardhat node  │
+    │  • World state   │  │  • Smart       │
+    │  • Event log     │  │    contracts   │
+    │  • Stats cache   │  │  • Local EVM   │
     └──────────────────┘  └────────────────┘
 ```
 
-### ABI Distribution System
-```
-1. Deploy Contracts
-   └─> Generates: contracts/artifacts/MiniWorld.json
+### How the contract ABI reaches each component
 
-2. Build Backend
-   └─> Copies ABI into Docker image at build time
+1. Deploying the contracts generates `contracts/artifacts/MiniWorld.json`.
+2. The backend build copies the ABI into its Docker image.
+3. The SDK build runs a prebuild script that copies the ABI into `sdk/src/contractABI.ts`, and TypeScript compiles the SDK with it.
+4. The frontend builds import the SDK, and Vite bundles the ABI into the JavaScript.
 
-3. Build SDK
-   └─> Prebuild script copies ABI → sdk/src/contractABI.ts
-   └─> TypeScript compiles SDK with bundled ABI
+Every component has the ABI without fetching it at runtime.
 
-4. Build Frontends
-   └─> Import SDK with bundled ABI
-   └─> Vite bundles everything into JavaScript
+## Quick start
 
-Result: All components have access to contract ABI with zero runtime fetches!
-```
+You need Docker Desktop (Windows or Mac) or Docker Engine (Linux), and PowerShell on Windows or Bash on Mac and Linux. Node.js 22.12 or newer is only needed for local development outside Docker.
 
----
-
-## 🚀 Quick Start (Docker)
-
-### Prerequisites
-
-- **Docker Desktop** (Windows/Mac) or **Docker Engine** (Linux)
-- **Node.js 22.12+** (for local development only)
-- **PowerShell** (Windows) or **Bash** (Mac/Linux)
-
-### One-Command Deployment
 ```powershell
-# Windows PowerShell
 .\scripts\docker-deploy-all.ps1
-
-# That's it! The script handles:
-# ✅ Clean previous deployment
-# ✅ Start PostgreSQL + Hardhat node
-# ✅ Deploy smart contracts
-# ✅ Generate and distribute contract ABI
-# ✅ Build all services (backend, SDK, frontends)
-# ✅ Start all containers
-# ✅ Validate deployment
 ```
 
-**Total time:** ~5-10 minutes (first run), ~2-3 minutes (subsequent runs)
-
-### Access Your Applications
+The script cleans the previous deployment, starts PostgreSQL and the Hardhat node, deploys the contracts, generates and distributes the ABI, builds the backend, SDK and frontends, starts the containers and checks that they are healthy. The first run takes several minutes and later runs are faster.
 
 | Application | URL | Purpose |
 |-------------|-----|---------|
-| **Game Client** | http://localhost:3000 | Play the game |
-| **Creator Dashboard** | http://localhost:3001 | View analytics |
-| **Backend API** | http://localhost:4000/api | API endpoints |
-| **Health Check** | http://localhost:4000/api/health | Service status |
+| Game client | http://localhost:3000 | Play the game |
+| Creator dashboard | http://localhost:3001 | View analytics |
+| Backend API | http://localhost:4000/api | API endpoints |
+| Health check | http://localhost:4000/api/health | Service status |
 
----
+## Project structure
 
-## 📁 Project Structure
 ```
 miniworld/
-├── contracts/              # Smart contracts (Solidity + Hardhat 3.x)
+├── contracts/              # Smart contracts (Solidity + Hardhat 3)
 │   ├── contracts/
-│   │   └── MiniWorld.sol  # Main game contract
-│   ├── ignition/          # Hardhat Ignition deployment
-│   ├── test/              # Contract tests (37 passing)
-│   └── artifacts/         # Generated ABI (not in git)
+│   │   └── MiniWorld.sol   # Main game contract
+│   ├── ignition/           # Hardhat Ignition deployment
+│   ├── test/               # Contract tests (37)
+│   └── artifacts/          # Generated ABI (not in git)
 │
-├── backend/               # Event indexer + REST API
+├── backend/                # Event indexer + REST API
 │   ├── src/
-│   │   ├── config/        # Database & blockchain config
-│   │   ├── services/      # Event processing & game logic
-│   │   ├── api/           # Express routes (8 endpoints)
-│   │   └── websocket/     # Socket.IO server
-│   └── migrations/        # SQL schema migrations
+│   │   ├── config/         # Database and blockchain config
+│   │   ├── services/       # Event processing and game logic
+│   │   ├── api/            # Express routes (8 endpoints)
+│   │   └── websocket/      # Socket.IO server
+│   └── migrations/         # SQL schema migrations
 │
-├── sdk/                   # TypeScript SDK for Web3 abstraction
+├── sdk/                    # TypeScript SDK for the contract and API
 │   ├── src/
-│   │   ├── MiniWorldSDK.ts        # Main SDK class
-│   │   ├── types.ts               # Type definitions
-│   │   ├── contractABI.ts         # Generated ABI (empty template in git)
-│   │   └── index.ts               # Public exports
+│   │   ├── MiniWorldSDK.ts # Main SDK class
+│   │   ├── types.ts        # Type definitions
+│   │   ├── contractABI.ts  # Generated ABI (empty template in git)
+│   │   └── index.ts        # Public exports
 │   ├── scripts/
-│   │   └── copy-abi.js            # Prebuild script (copies ABI)
-│   └── test/              # SDK tests (78 passing)
+│   │   └── copy-abi.js     # Prebuild script (copies ABI)
+│   └── test/               # SDK test script and a browser test page
 │
-├── game-client/           # Player-facing React app
-│   ├── src/
-│   │   ├── components/    # Game UI (Canvas board, tile panel, etc.)
-│   │   ├── contexts/      # React contexts (SDK integration)
-│   │   └── hooks/         # Custom hooks
-│   └── public/
-│
-├── creator-dashboard/     # Analytics dashboard
-│   ├── src/
-│   │   ├── components/    # Dashboard components (charts, tables)
-│   │   └── hooks/         # Data fetching hooks
-│   └── public/
-│
-├── docker/                # Docker configuration
-│   ├── backend.Dockerfile
-│   ├── contracts.Dockerfile
-│   ├── game-client.Dockerfile
-│   ├── creator-dashboard.Dockerfile
-│   ├── nginx-game-client.conf
-│   └── nginx-creator-dashboard.conf
-│
-├── scripts/               # Automation scripts
-│   ├── docker-deploy-all.ps1      # Main deployment script
-│   └── docker-status.ps1          # Status dashboard (optional)
-│
-├── docker-compose.yml     # Base service configuration (dev overrides baked in)
-└── docker-compose.prod.yml# Production configuration
+├── game-client/            # Player-facing React app
+├── creator-dashboard/      # Analytics dashboard
+├── docker/                 # Dockerfiles and nginx configs
+├── scripts/                # docker-deploy-all.ps1, docker-status.ps1
+├── docker-compose.yml      # Base service configuration (dev overrides baked in)
+└── docker-compose.prod.yml # Production-style configuration (see docs/DEPLOYMENT.md)
 ```
 
----
+## Development workflow
 
-## 🔧 Development Workflow
+### Contract changes
 
-### Making Changes
-
-#### 1. Smart Contract Changes
 ```powershell
-# Edit contract
 code contracts/contracts/MiniWorld.sol
 
-# Redeploy everything (one command)
+# Redeploy everything
 .\scripts\docker-deploy-all.ps1
-
-# The script automatically:
-# - Recompiles contracts → new ABI
-# - Updates contract address in .env files
-# - Rebuilds backend with new ABI
-# - Rebuilds SDK with new ABI (prebuild script runs)
-# - Rebuilds frontends with new SDK
-# - Everything just works! ✨
 ```
 
-#### 2. Backend Changes
+The script recompiles the contracts to get a new ABI, updates the contract address in the `.env` files, and rebuilds the backend, SDK and frontends against it.
+
+### Backend changes
+
 ```powershell
-# Edit backend code
 code backend/src/services/GameService.ts
 
-# In dev mode, backend auto-reloads
-# Or rebuild manually:
+# In dev mode the backend reloads itself. To rebuild by hand:
 docker-compose build backend
 docker-compose up -d backend
 ```
 
-#### 3. SDK Changes
+### SDK changes
+
 ```powershell
-# Edit SDK code
 code sdk/src/MiniWorldSDK.ts
 
-# Rebuild SDK
 cd sdk
 npm run build
 
-# Rebuild frontends (they import SDK)
+# The frontends import the SDK, so rebuild them too
 docker-compose build game-client creator-dashboard
 docker-compose up -d game-client creator-dashboard
 ```
 
-#### 4. Frontend Changes
+### Frontend changes
+
 ```powershell
-# Edit frontend code
 code game-client/src/components/GameBoard.tsx
 
-# In dev mode, Vite auto-reloads via volume mounts
-# Or rebuild manually:
+# In dev mode Vite reloads through volume mounts. To rebuild by hand:
 docker-compose build game-client
 docker-compose up -d game-client
 ```
 
-### Development Commands
+### Commands
+
 ```powershell
-# View all service status
-docker-compose ps
-
-# View logs (all services)
-docker-compose logs -f
-
-# View logs (specific service)
-docker-compose logs -f backend
-docker-compose logs -f game-client
-
-# Stop all services (preserve data)
-docker-compose down
-
-# Stop and clean all data
-docker-compose down -v
-
-# Check service health
-.\scripts\docker-status.ps1   # Optional status dashboard
-
-# Restart specific service
+docker-compose ps                       # service status
+docker-compose logs -f                  # all logs
+docker-compose logs -f backend          # one service
+docker-compose down                     # stop, keep data
+docker-compose down -v                  # stop, delete data
+.\scripts\docker-status.ps1             # optional status dashboard
 docker-compose restart backend
 ```
 
----
+## API reference
 
-## 🌐 API Reference
+Base URL: `http://localhost:4000/api`
 
-### Base URL
-```
-http://localhost:4000/api
-```
+### World state
 
-### Endpoints
+**Get all tiles**: `GET /api/world` returns all 100 tiles with their current state.
 
-#### World State
-
-**Get All Tiles**
-```http
-GET /api/world
-```
-
-Returns all 100 tiles with current state.
-
-**Response:**
 ```json
 {
   "tiles": [
@@ -314,82 +212,51 @@ Returns all 100 tiles with current state.
 }
 ```
 
-**Get Single Tile**
-```http
-GET /api/tile/:id
-```
+**Get one tile**: `GET /api/tile/:id`, where `id` is the tile ID (0 to 99).
 
-Parameters:
-- `id` - Tile ID (0-99)
+**Get a player's tiles**: `GET /api/player/:address`, where `address` is an Ethereum address.
 
-**Get Player Tiles**
-```http
-GET /api/player/:address
-```
+### Activity and stats
 
-Parameters:
-- `address` - Ethereum address (0x...)
+**Recent events**: `GET /api/activity?limit=50`, where `limit` is 1 to 200 and defaults to 50.
 
-#### Activity & Stats
+**Game statistics**: `GET /api/stats`
 
-**Get Recent Events**
-```http
-GET /api/activity?limit=50
-```
-
-Query Parameters:
-- `limit` - Number of events (1-200, default: 50)
-
-**Get Game Statistics**
-```http
-GET /api/stats
-```
-
-Returns:
 ```json
 {
   "total_claims": 42,
   "unique_players": 15,
   "total_events": 127,
   "items_by_type": {
-    "0": 58,  // Empty
-    "1": 12,  // Tree
-    "2": 8,   // Rock
-    "3": 5,   // Flag
-    "4": 3,   // Building
-    "5": 14   // Water
+    "0": 58,
+    "1": 12,
+    "2": 8,
+    "3": 5,
+    "4": 3,
+    "5": 14
   }
 }
 ```
 
-**Get Player Statistics**
-```http
-GET /api/player/:address/stats
-```
+The item types are 0 Empty, 1 Tree, 2 Rock, 3 Flag, 4 Building and 5 Water.
 
-#### System
+**Player statistics**: `GET /api/player/:address/stats`
 
-**Health Check**
-```http
-GET /api/health
-```
+### System
 
-**Sync Status**
-```http
-GET /api/sync-status
-```
+**Health check**: `GET /api/health`
 
-### WebSocket Events
+**Sync status**: `GET /api/sync-status`
 
-Connect to: `ws://localhost:4000`
+### WebSocket events
 
-**Events:**
-- `tileClaimed` - Player claimed a tile
-- `itemPlaced` - Player placed an item
-- `itemRemoved` - Player removed an item
-- `worldUpdate` - General state change
+Connect to `ws://localhost:4000`.
 
-**Example (Browser):**
+- `tileClaimed`: a player claimed a tile
+- `itemPlaced`: a player placed an item
+- `itemRemoved`: a player removed an item
+- `worldUpdate`: a general state change
+
 ```javascript
 import { io } from 'socket.io-client';
 
@@ -400,97 +267,78 @@ socket.on('tileClaimed', (data) => {
 });
 ```
 
----
+## Testing
 
-## 🧪 Testing
+### Contract tests
 
-### Smart Contract Tests
 ```powershell
 cd contracts
+npm install
 npm test
 
 # With gas reporting
 npm test -- --gas-report
 
-# Specific test
+# One test
 npm test -- --grep "Should allow claiming"
 ```
 
-**Test Coverage:** 37 tests covering all contract functions and edge cases
+On 2026-10-07 this printed `37 passing`.
 
-### SDK Tests
+### SDK tests
+
 ```powershell
 cd sdk
+npm install
+npm run build
 node test/test-node.mjs
-
-# Browser tests (interactive)
-npx http-server -p 8080
-# Open: http://localhost:8080/test/test-browser.html
 ```
 
-**Test Coverage:** 78 automated tests + interactive browser tests
+The script needs the contract artifacts (the build copies the ABI from `contracts/artifacts`) and, for its API checks, the backend running on port 4000. On 2026-10-07 without the backend it reported 34 passed and 8 failed, and the 8 failures were the API read checks that could not reach port 4000. Several of the passing lines are status messages rather than assertions. The write and WebSocket checks need a browser and a wallet: serve the folder with `npx http-server -p 8080` and open `http://localhost:8080/test/test-browser.html`.
 
-### Integration Testing
+### Full-stack check
+
+`.\scripts\docker-deploy-all.ps1` ends with a validation step that reports PostgreSQL, the backend API, the 100-tile world state and both frontends.
+
+## Troubleshooting
+
+### Services will not start
+
 ```powershell
-# Full stack test
-.\scripts\docker-deploy-all.ps1
-
-# Should see at the end:
-# ✅ DEPLOYMENT SUCCESSFUL!
-# ✅ PostgreSQL: Healthy
-# ✅ Backend API: Healthy
-# ✅ World State: 100 tiles initialized
-# ✅ Game Client: Accessible
-# ✅ Creator Dashboard: Accessible
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Services Won't Start
-```powershell
-# Check logs
 docker-compose logs
-
-# Check specific service
 docker-compose logs backend
-
-# Restart all services
 docker-compose down
 .\scripts\docker-deploy-all.ps1
 ```
 
-### Port Already in Use
+### Port already in use
+
 ```powershell
-# Find process using port
 netstat -ano | findstr :3000
 netstat -ano | findstr :4000
 netstat -ano | findstr :8545
 
-# Kill process (replace <PID> with actual PID)
+# Replace <PID> with the process ID
 taskkill /PID <PID> /F
-
-# Or change port in docker-compose.yml
 ```
 
-### Contract Address Issues
+Or change the port in `docker-compose.yml`.
+
+### Contract address mismatch
+
 ```powershell
-# Verify addresses match
 type backend\.env | findstr CONTRACT_ADDRESS
 type game-client\.env | findstr CONTRACT_ADDRESS
 type creator-dashboard\.env | findstr CONTRACT_ADDRESS
 
-# If they don't match, redeploy:
+# If they differ, redeploy
 .\scripts\docker-deploy-all.ps1
 ```
 
-### Database Connection Errors
-```powershell
-# Check PostgreSQL status
-docker-compose ps postgres
+### Database connection errors
 
-# Restart PostgreSQL
+```powershell
+docker-compose ps postgres
 docker-compose restart postgres
 
 # Or rebuild everything
@@ -498,152 +346,68 @@ docker-compose down -v
 .\scripts\docker-deploy-all.ps1
 ```
 
-### MetaMask Not Connecting
+### MetaMask will not connect
 
-1. **Add Hardhat Network to MetaMask:**
-   - Network Name: `Hardhat Local`
-   - RPC URL: `http://localhost:8545`
-   - Chain ID: `31337`
-   - Currency Symbol: `ETH`
+1. Add the Hardhat network: name `Hardhat Local`, RPC URL `http://localhost:8545`, chain ID `31337`, currency symbol `ETH`.
+2. Import a test account. Open a Hardhat console with `docker-compose exec contracts npx hardhat console --network localhost` and read the account from the signers, or take a private key from the Hardhat node output.
+3. If transactions still fail after a restart, use Settings, Advanced, Reset Account in MetaMask.
 
-2. **Import Test Account:**
+### ABI loading errors
+
 ```powershell
-   # Get private key from Hardhat console
-   docker-compose exec contracts npx hardhat console --network localhost
-   
-   # In console:
-   const accounts = await ethers.getSigners();
-   console.log(accounts[0].address);
-   # Copy private key from hardhat node output
-```
-
-3. **Reset MetaMask:**
-   - Settings → Advanced → Reset Account
-
-### ABI Loading Errors
-
-If you see errors about missing contract ABI:
-```powershell
-# Verify ABI exists
 dir contracts\artifacts\contracts\MiniWorld.sol\MiniWorld.json
 
-# If missing, redeploy
+# If it is missing, redeploy
 .\scripts\docker-deploy-all.ps1
-
-# The deployment script will:
-# 1. Generate ABI in step 5
-# 2. Verify ABI exists in step 6.5
-# 3. Build all services with ABI in step 8
 ```
 
-### Canvas Not Rendering
+### Canvas not rendering
 
-1. **Check browser console** (F12)
-2. **Verify SDK initialized:**
-```javascript
-   // Should see in console:
-   // ✓ SDK initialized successfully
-   // ✓ Using bundled contract ABI
-```
-3. **Check WebSocket connection:**
-```javascript
-   // Should see:
-   // WebSocket connected
-```
+Open the browser console (F12), check that the SDK initialized and that the WebSocket connected.
 
-### Clear Everything and Start Fresh
+### Clear everything and start fresh
+
 ```powershell
-# Nuclear option - removes ALL data
 docker-compose down -v
-
-# Remove all images
 docker-compose down --rmi all
-
-# Rebuild from scratch
 .\scripts\docker-deploy-all.ps1
-
-# Takes ~10-15 minutes but guarantees fresh state
 ```
 
----
+This takes longer than a normal run but starts from a clean state.
 
-## 🛠️ Tech Stack
+## Tech stack
 
-### Smart Contracts & Blockchain
+### Contracts and blockchain
+- Solidity 0.8.30
+- Hardhat 3.0.7
+- ethers.js 6.13.7
+- Local Hardhat node, chain ID 31337
 
-- **Solidity:** 0.8.30 (latest stable with transient storage support)
-- **Hardhat:** 3.0.7 (Rust-based EDR runtime, declarative config)
-- **ethers.js:** 6.13.7 (native BigInt, no BigNumber class)
-- **Network:** Local Hardhat node (Chain ID: 31337)
+### Backend
+- Node.js 22, TypeScript 5.9
+- Express 5.1
+- PostgreSQL 18 with the `pg` driver 8.13.1
+- Socket.IO 4.8.1
+- tsx 4.19.2
 
-### Backend Services
+### Frontend
+- React 19.2 and TypeScript 5.9
+- Vite 7.1
+- Tailwind CSS 4.1
+- Recharts 3.2.1 (creator dashboard)
+- Nginx (Alpine) to serve the production build
 
-- **Node.js:** 22.20.0 LTS (Active LTS, supports require(esm))
-- **Express:** 5.1.0 (async promise handling, requires Node 18+)
-- **TypeScript:** 5.9.x (strict mode, enhanced types)
-- **PostgreSQL:** 18.0 (3x I/O performance boost with AIO subsystem)
-- **Socket.IO:** 4.8.1 (WebSocket real-time communication)
-- **pg:** 8.13.1 (PostgreSQL driver for Node.js)
+### Tooling
+- Docker 24+ and Docker Compose v2
 
-### Frontend Applications
+## Security
 
-- **React:** 19.2.0 (Actions API, Activity component, ref as prop)
-- **TypeScript:** 5.9.x (strict mode throughout)
-- **Vite:** 7.1.10 (requires Node 22.12+, baseline-widely-available target)
-- **Tailwind CSS:** 4.1.14+ (CSS-first config, @tailwindcss/vite plugin)
-- **Recharts:** 3.2.1 (for Creator Dashboard analytics)
-- **Nginx:** Alpine (production web server)
+This is a development setup with default credentials, no API authentication and `CORS_ORIGIN=*`. Before putting anything like it on a public network you would need to change the PostgreSQL password, add authentication and rate limiting to the API, serve it over HTTPS with a real CORS origin, put the contract through a professional audit and test it on a testnet first, and move secrets into a secrets manager.
 
-### Development Tools
+## Environment variables
 
-- **Docker:** 24+ (container orchestration)
-- **Docker Compose:** v2 (multi-service deployment)
-- **tsx:** 4.19.2 (TypeScript execution)
+### Backend (`.env`)
 
----
-
-## 📊 Performance Metrics
-
-- **Backend API Response:** <100ms average
-- **WebSocket Latency:** <50ms for event propagation
-- **Frontend Initial Load:** <2s (production build)
-- **Contract Gas Usage:** Optimized with Solidity 0.8.30
-- **Database Query Time:** <10ms with proper indexing
-- **Canvas Rendering:** 60 FPS capable (100 tiles)
-
----
-
-## 🔐 Security Considerations
-
-### Development Environment
-
-⚠️ **This is a development setup. DO NOT use in production without:**
-
-1. **Changing default credentials:**
-   - PostgreSQL password
-   - Add authentication to backend API
-
-2. **Enabling HTTPS:**
-   - Configure SSL/TLS certificates
-   - Update CORS_ORIGIN to your domain
-
-3. **Rate Limiting:**
-   - Add rate limiting to API endpoints
-   - Protect against DDoS
-
-4. **Contract Security:**
-   - Professional smart contract audit
-   - Test on testnet before mainnet
-
-5. **Environment Variables:**
-   - Use secrets management
-   - Never commit real private keys
-
----
-
-## 📝 Environment Variables
-
-### Backend (.env)
 ```env
 PORT=4000
 DB_HOST=postgres
@@ -652,100 +416,41 @@ DB_NAME=miniworld
 DB_USER=postgres
 DB_PASSWORD=postgres
 RPC_URL=http://contracts:8545
-CONTRACT_ADDRESS=0x...  # Auto-updated by deploy script
+CONTRACT_ADDRESS=0x...  # updated by the deploy script
 CHAIN_ID=31337
 START_BLOCK=0
 GRID_SIZE=10
 CORS_ORIGIN=*
 ```
 
-### Frontend (.env)
+### Frontend (`.env`)
+
 ```env
-# Game Client & Creator Dashboard
+# Game client and creator dashboard
 VITE_API_URL=http://localhost:4000/api
 VITE_WS_URL=http://localhost:4000
-VITE_CONTRACT_ADDRESS=0x...  # Auto-updated by deploy script
+VITE_CONTRACT_ADDRESS=0x...  # updated by the deploy script
 ```
 
-**Note:** `VITE_*` variables are baked into the frontend JavaScript at **build time** by Vite. Changing them requires rebuilding the frontend.
+`VITE_*` variables are baked into the JavaScript at build time, so changing one means rebuilding the frontend.
 
----
+## Running it locally
 
-## 🤝 Contributing
-
-This is a demonstration project showcasing blockchain gaming architecture.
-
-### To Run Locally
 ```powershell
-# 1. Clone repository
 git clone https://github.com/Exalt24/Miniworld.git
 cd Miniworld
-
-# 2. Deploy with Docker
 .\scripts\docker-deploy-all.ps1
-
-# 3. Open applications
-# Game Client: http://localhost:3000
-# Creator Dashboard: http://localhost:3001
 ```
 
----
+Then open the game client at http://localhost:3000 and the creator dashboard at http://localhost:3001.
 
-## 📄 License
+## Not done
 
-MIT License - See LICENSE file for details
+- No public deployment, testnet or mainnet
+- No latency measurements for the WebSocket feed or the API
+- No API authentication or rate limiting
+- No contract audit
 
----
+## License
 
-## 🎯 Project Goals
-
-This project demonstrates:
-
-✅ **On-chain game logic** with Solidity smart contracts  
-✅ **Real-time multiplayer** synchronization via WebSocket  
-✅ **Web3 abstraction** through TypeScript SDK  
-✅ **Event-driven architecture** with PostgreSQL caching  
-✅ **Modern frontend** with React 19 and Canvas rendering  
-✅ **Creator tools** with analytics dashboard  
-✅ **Docker deployment** with automated build pipeline  
-✅ **Production-ready patterns** for blockchain gaming  
-
----
-
-## 📚 Additional Resources
-
-- **Hardhat Documentation:** https://hardhat.org/docs
-- **ethers.js v6 Guide:** https://docs.ethers.org/v6/
-- **React 19 Release Notes:** https://react.dev/blog/2024/12/05/react-19
-- **Vite 7 Migration Guide:** https://vitejs.dev/guide/migration
-- **Tailwind CSS v4:** https://tailwindcss.com/docs
-- **Socket.IO Documentation:** https://socket.io/docs/v4/
-
----
-
-## 🚀 Quick Commands Reference
-```powershell
-# Deploy everything
-.\scripts\docker-deploy-all.ps1
-
-# View status (optional)
-.\scripts\docker-status.ps1
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Clean everything
-docker-compose down -v
-
-# Check service health
-curl http://localhost:4000/api/health
-```
-
----
-
-**Built with:** Hardhat 3 (Rust EDR) • React 19 • Express 5 • PostgreSQL 18 • Vite 7 • Tailwind CSS 4
-
-**Questions?** See [Troubleshooting](#troubleshooting) or check service logs with `docker-compose logs`
+MIT. See the LICENSE file.

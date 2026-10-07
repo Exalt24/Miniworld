@@ -481,7 +481,7 @@ this.socket.on('reconnect', () => {
 });
 ```
 
-**Latency**: <50ms from event broadcast to client receipt
+Event broadcast to client receipt latency has not been measured.
 
 ---
 
