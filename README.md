@@ -294,7 +294,7 @@ npm run build
 node test/test-node.mjs
 ```
 
-The script needs the contract artifacts (the build copies the ABI from `contracts/artifacts`) and, for its API checks, the backend running on port 4000. On 2026-10-07 without the backend it reported 34 passed and 8 failed, and the 8 failures were the API read checks that could not reach port 4000. Several of the passing lines are status messages rather than assertions. The write and WebSocket checks need a browser and a wallet: serve the folder with `npx http-server -p 8080` and open `http://localhost:8080/test/test-browser.html`.
+The script has 79 assert calls. It needs the contract artifacts (the build copies the ABI from `contracts/artifacts`) and, for its API checks, the backend running on port 4000. On 2026-10-07 without the backend it reported 34 passed and 8 failed, and the 8 failures were the API read checks that could not reach port 4000. Several of the passing lines are status messages rather than assertions. The write and WebSocket checks need a browser and a wallet: serve the folder with `npx http-server -p 8080` and open `http://localhost:8080/test/test-browser.html`.
 
 ### Full-stack check
 
