@@ -1,5 +1,9 @@
 # MiniWorld
 
+![MiniWorld running locally: a tile is claimed and an item placed from the game client, a second player's tiles appear live, then the creator dashboard shows the same events](docs/demo.gif)
+
+*Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details under [Demo recording](#demo-recording)). Nothing in it is deployed to a public network.*
+
 A small multiplayer Web3 game on a local Ethereum chain. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker. It has not been deployed to a public network.
 
 ## Contents
@@ -8,6 +12,7 @@ A small multiplayer Web3 game on a local Ethereum chain. Players claim tiles on 
 - [Documentation](#documentation)
 - [Architecture](#architecture)
 - [Quick start](#quick-start)
+- [Demo recording](#demo-recording)
 - [Project structure](#project-structure)
 - [Development workflow](#development-workflow)
 - [API reference](#api-reference)
@@ -77,11 +82,15 @@ Every component has the ABI without fetching it at runtime.
 
 ## Quick start
 
-You need Docker Desktop (Windows or Mac) or Docker Engine (Linux), and PowerShell on Windows or Bash on Mac and Linux. Node.js 22.12 or newer is only needed for local development outside Docker.
+You need Docker Desktop (Windows or Mac) or Docker Engine (Linux), and PowerShell to run the deploy script (it is a `.ps1`; there is no Bash version). Node.js 22.12 or newer is only needed for local development outside Docker.
 
 ```powershell
+git clone https://github.com/Exalt24/Miniworld.git
+cd Miniworld
 .\scripts\docker-deploy-all.ps1
 ```
+
+The script publishes ports 3000, 3001, 4000, 5432 and 8545 on the host, so those must be free. Reading the board and the dashboard needs no wallet. Claiming a tile or placing an item sends a transaction, so those need a browser wallet (MetaMask) on the local Hardhat network, as described in [MetaMask will not connect](#metamask-will-not-connect).
 
 The script cleans the previous deployment, starts PostgreSQL and the Hardhat node, deploys the contracts, generates and distributes the ABI, builds the backend, SDK and frontends, starts the containers and checks that they are healthy. The first run takes several minutes and later runs are faster.
 
@@ -91,6 +100,15 @@ The script cleans the previous deployment, starts PostgreSQL and the Hardhat nod
 | Creator dashboard | http://localhost:3001 | View analytics |
 | Backend API | http://localhost:4000/api | API endpoints |
 | Health check | http://localhost:4000/api/health | Service status |
+
+## Demo recording
+
+The GIF at the top is the real app on a local Hardhat chain, recorded with Playwright in headless Chromium. Two parts of it are scripted, and they are the only things that are not the stock setup:
+
+- **The wallet.** `scripts/demo/wallet-stub.js` is a minimal `window.ethereum` stand-in, not MetaMask. It reports Hardhat dev account #0 and forwards every JSON-RPC call to the local node, which signs with that unlocked account. The game client's own Connect Wallet, Claim Tile and Place Item buttons are what get clicked.
+- **The second player.** The green tiles are Hardhat dev account #1, sending `claimTile` and `placeItem` transactions straight to the node from the script. The board colours them by itself when the WebSocket event arrives.
+
+I brought the stack up by running the deploy script's steps by hand (start PostgreSQL and the Hardhat node, deploy with Ignition, export `CONTRACT_ADDRESS` and `VITE_CONTRACT_ADDRESS`, build, start), with the host ports remapped because other containers on that machine held 3000 and 4000. Then `node scripts/demo/record-demo.cjs` drove it. The script needs the stack on a fresh chain, `npm install playwright` somewhere Node can resolve it, and `cd sdk && npm install` for ethers; its ports and output folder are set with `MW_GAME_URL`, `MW_DASH_URL`, `MW_RPC_URL` and `MW_OUT`.
 
 ## Project structure
 
@@ -108,6 +126,7 @@ miniworld/
 │   │   ├── config/         # Database and blockchain config
 │   │   ├── services/       # Event processing and game logic
 │   │   ├── api/            # Express routes (8 endpoints)
+│   │   ├── types/          # Shared TypeScript types for the services
 │   │   └── websocket/      # Socket.IO server
 │   └── migrations/         # SQL schema migrations
 │
@@ -125,6 +144,8 @@ miniworld/
 ├── creator-dashboard/      # Analytics dashboard
 ├── docker/                 # Dockerfiles and nginx configs
 ├── scripts/                # docker-deploy-all.ps1, docker-status.ps1
+│   └── demo/               # wallet-stub.js and record-demo.cjs (how docs/demo.gif was recorded)
+├── docs/                   # API, architecture and deployment notes, plus demo.gif
 ├── docker-compose.yml      # Base service configuration (dev overrides baked in)
 └── docker-compose.prod.yml # Production-style configuration (see docs/DEPLOYMENT.md)
 ```
@@ -283,7 +304,7 @@ npm test -- --gas-report
 npm test -- --grep "Should allow claiming"
 ```
 
-On 2026-10-07 this printed `37 passing`.
+On 2026-10-07 this printed `37 passing`. On 2026-10-11 `docker exec miniworld-contracts npx hardhat test` printed `37 passing` again.
 
 ### SDK tests
 
@@ -294,7 +315,7 @@ npm run build
 node test/test-node.mjs
 ```
 
-The script has 79 assert calls. It needs the contract artifacts (the build copies the ABI from `contracts/artifacts`) and, for its API checks, the backend running on port 4000. On 2026-10-07 without the backend it reported 34 passed and 8 failed, and the 8 failures were the API read checks that could not reach port 4000. Several of the passing lines are status messages rather than assertions. The write and WebSocket checks need a browser and a wallet: serve the folder with `npx http-server -p 8080` and open `http://localhost:8080/test/test-browser.html`.
+The script has 79 assert calls. It needs the contract artifacts (the build copies the ABI from `contracts/artifacts`) and, for its API checks, the backend running on port 4000. On 2026-10-07 without the backend it reported 34 passed and 8 failed, and the 8 failures were the API read checks that could not reach port 4000. On 2026-10-11 with the backend running (pointed at the stack's remapped port for that run) it reported 79 passed and 0 failed. Several of the passing lines are status messages rather than assertions. The write and WebSocket checks need a browser and a wallet: serve the folder with `npx http-server -p 8080` and open `http://localhost:8080/test/test-browser.html`.
 
 ### Full-stack check
 
@@ -406,7 +427,9 @@ This is a development setup with default credentials, no API authentication and 
 
 ## Environment variables
 
-### Backend (`.env`)
+Docker Compose sets all of these for the containers, so the Docker route needs no `.env` file. The `.env.example` files in `backend/`, `game-client/` and `creator-dashboard/` hold the values for running a service on the host instead (they point at `localhost` rather than the container names), and the `.env` copies are git-ignored.
+
+### Backend (as set in `docker-compose.yml`)
 
 ```env
 PORT=4000
@@ -423,26 +446,15 @@ GRID_SIZE=10
 CORS_ORIGIN=*
 ```
 
-### Frontend (`.env`)
+### Frontend (game client and creator dashboard)
 
 ```env
-# Game client and creator dashboard
 VITE_API_URL=http://localhost:4000/api
 VITE_WS_URL=http://localhost:4000
-VITE_CONTRACT_ADDRESS=0x...  # updated by the deploy script
+VITE_CONTRACT_ADDRESS=0x...  # the deploy script exports it from the contract it just deployed
 ```
 
-`VITE_*` variables are baked into the JavaScript at build time, so changing one means rebuilding the frontend.
-
-## Running it locally
-
-```powershell
-git clone https://github.com/Exalt24/Miniworld.git
-cd Miniworld
-.\scripts\docker-deploy-all.ps1
-```
-
-Then open the game client at http://localhost:3000 and the creator dashboard at http://localhost:3001.
+The compose file passes these to the Vite dev server when the container starts, so after changing one, restart the container. In a production build Vite bakes them into the JavaScript, so the frontend has to be rebuilt.
 
 ## Not done
 
@@ -450,6 +462,7 @@ Then open the game client at http://localhost:3000 and the creator dashboard at 
 - No latency measurements for the WebSocket feed or the API
 - No API authentication or rate limiting
 - No contract audit
+- The demo recording used a scripted wallet stand-in, not MetaMask itself
 
 ## License
 
