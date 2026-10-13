@@ -300,7 +300,7 @@ Write-Host "SUCCESS: All services started" -ForegroundColor Green
 # ============================================================================
 Write-Host "`n[9/9] Validating deployment..." -ForegroundColor Yellow
 
-Start-Sleep -Seconds 10  # Give services time to initialize
+Start-Sleep -Seconds 10  # fixed-wait-ok: Give services time to initialize (a deploy script; the services expose no common health endpoint)
 
 $validationPassed = $true
 
