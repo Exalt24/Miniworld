@@ -103,7 +103,8 @@ git clone <repository-url>
 cd miniworld
 
 # Copy environment templates
-cp docker/.env.docker .env
+# docker/.env.docker.example is the template; copy it to .env (git-ignored)
+cp docker/.env.docker.example .env
 cp backend/.env.example backend/.env
 cp game-client/.env.example game-client/.env
 cp creator-dashboard/.env.example creator-dashboard/.env
