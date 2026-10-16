@@ -28,5 +28,8 @@
     "@types/node": "^22.10.2",
     "@types/mocha": "^10.0.10",
     "tsx": "^4.19.2"
+  },
+  "overrides": {
+    "serialize-javascript": "7.1.2"
   }
 }
