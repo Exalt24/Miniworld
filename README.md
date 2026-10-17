@@ -1,10 +1,12 @@
 # MiniWorld
 
+[![CI](https://github.com/Exalt24/Miniworld/actions/workflows/ci.yml/badge.svg)](https://github.com/Exalt24/Miniworld/actions/workflows/ci.yml)
+
 ![MiniWorld running locally: a tile is claimed and an item placed from the game client, a second player's tiles appear live, then the creator dashboard shows the same events](docs/demo.gif)
 
 *Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details under [Demo recording](#demo-recording)). Nothing in it is deployed to a public network.*
 
-A small multiplayer Web3 game on a local Ethereum chain. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker. It has not been deployed to a public network.
+Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an event indexer and two React apps. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker. It has not been deployed to a public network.
 
 ## Contents
 
