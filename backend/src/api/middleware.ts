@@ -35,8 +35,13 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+/** Express types a route param as `string | string[]`; the named params used here are always one string. */
+export function paramString(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : value) ?? '';
+}
+
 export function validateTileId(req: Request, res: Response, next: NextFunction) {
-  const tileId = parseInt(req.params.id);
+  const tileId = parseInt(paramString(req.params.id));
   
   if (isNaN(tileId) || tileId < 0 || tileId >= 100) {
     res.status(400).json({
@@ -51,7 +56,7 @@ export function validateTileId(req: Request, res: Response, next: NextFunction) 
 }
 
 export function validateAddress(req: Request, res: Response, next: NextFunction) {
-  const address = req.params.address;
+  const address = paramString(req.params.address);
   
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
     res.status(400).json({

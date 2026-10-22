@@ -45,6 +45,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: "creator-dashboard/package-lock.json"
+      - name: Compile contracts (the sdk build reads their ABI)
+        working-directory: contracts
+        run: |
+          npm ci
+          npx hardhat compile
+      - name: Build the sdk (imported from sdk/dist)
+        working-directory: sdk
+        run: |
+          npm ci
+          npm run build
       - name: Install
         run: npm ci
       - name: Typecheck
@@ -64,6 +74,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: "game-client/package-lock.json"
+      - name: Compile contracts (the sdk build reads their ABI)
+        working-directory: contracts
+        run: |
+          npm ci
+          npx hardhat compile
+      - name: Build the sdk (imported from sdk/dist)
+        working-directory: sdk
+        run: |
+          npm ci
+          npm run build
       - name: Install
         run: npm ci
       - name: Typecheck
@@ -83,6 +103,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: "sdk/package-lock.json"
+      - name: Compile contracts (the sdk build reads their ABI)
+        working-directory: contracts
+        run: |
+          npm ci
+          npx hardhat compile
       - name: Install
         run: npm ci
       - name: Build

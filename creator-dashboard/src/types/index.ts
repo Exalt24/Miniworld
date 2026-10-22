@@ -36,8 +36,8 @@ export interface PlayerInfo {
   address: string;
   tilesOwned: number;
   itemsPlaced: number;
-  firstClaim: Date | null;
-  lastActivity: Date | null;
+  firstClaim: string | null;
+  lastActivity: string | null;
 }
 
 export interface TimeSeriesData {

@@ -80,7 +80,7 @@ export default function ActivityFeed() {
     const handleTransactionConfirmed = (data: any) => {
       console.log('ActivityFeed: Transaction confirmed', data);
       
-      let eventType = '';
+      let eventType: ActivityItem['eventType'] | '' = '';
       let itemType = null;
 
       if (data.type === 'claimTile') {

@@ -87,11 +87,11 @@ export type EventType = 'TileClaimed' | 'ItemPlaced' | 'ItemRemoved';
 
 export interface ActivityItem {
   id: number;
-  eventType: string;
+  eventType: EventType;
   tileId: number;
   playerAddress: string;
   itemType?: number;
-  blockNumber: string;
+  blockNumber: number;
   transactionHash: string;
   timestamp: string;
   createdAt: string;

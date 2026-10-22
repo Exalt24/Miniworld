@@ -24,6 +24,7 @@ export interface Tile {
   tileId: number;
   owner: string;
   itemType: number;
+  itemTypeName?: string | null;
   lastModified: string;
   x: number;
   y: number;

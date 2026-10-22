@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { GameService } from '../services/GameService.js';
 import { StatsService } from '../services/StatsService.js';
 import { EventProcessor } from '../services/EventProcessor.js';
-import { validateTileId, validateAddress } from './middleware.js';
+import { validateTileId, validateAddress, paramString } from './middleware.js';
 
 const router = Router();
 const gameService = new GameService();
@@ -27,7 +27,7 @@ router.get('/world', async (req: Request, res: Response) => {
 });
 
 router.get('/tile/:id', validateTileId, async (req: Request, res: Response) => {
-  const tileId = parseInt(req.params.id);
+  const tileId = parseInt(paramString(req.params.id));
   const tile = await gameService.getTile(tileId);
   
   if (!tile) {
@@ -49,7 +49,7 @@ router.get('/tile/:id', validateTileId, async (req: Request, res: Response) => {
 });
 
 router.get('/player/:address', validateAddress, async (req: Request, res: Response) => {
-  const address = req.params.address;
+  const address = paramString(req.params.address);
   const result = await gameService.getPlayerTiles(address);
   
   res.json({
@@ -60,7 +60,7 @@ router.get('/player/:address', validateAddress, async (req: Request, res: Respon
 });
 
 router.get('/player/:address/stats', validateAddress, async (req: Request, res: Response) => {
-  const address = req.params.address;
+  const address = paramString(req.params.address);
   const stats = await statsService.getPlayerStats(address);
   
   res.json({
