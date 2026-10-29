@@ -19,7 +19,7 @@
     "typescript": "^7.0.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "vite": "^8.3.4",
+    "vite": "^8.3.5",
     "@vitejs/plugin-react": "^6.1.2",
     "tailwindcss": "^4.1.14",
     "@tailwindcss/vite": "^4.1.14"
