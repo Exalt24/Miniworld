@@ -24,7 +24,7 @@ Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an
 
 - Game state lives in the `MiniWorld.sol` contract: tile ownership and item placement
 - A WebSocket feed (Socket.IO) pushes tile and item events to every connected client
-- A multi-tenant API layer for studios: Express routes and Sequelize models with migrations on PostgreSQL, a Redis plan cache, a MongoDB audit log and Firebase Auth ID-token verification, tested against real database containers
+- A multi-tenant API layer for studios: Express routes and Sequelize models with migrations on PostgreSQL, a Redis plan cache, a MongoDB audit log and Firebase Auth sign-in verification, tested against real database containers
 - The player client is a React 19 app that draws the board on a canvas
 - The creator dashboard shows activity and statistics with Recharts
 - The SDK exposes contract calls, REST reads and WebSocket events, and has the contract ABI bundled at build time
