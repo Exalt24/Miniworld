@@ -1,0 +1,120 @@
+SaaS guard mutation check, run 2026-10-30, Node v24.18.0, same databases as saas-tests-2026-10-30.txt
+Command: npm run test:mutation, run as three slices (--from 1 --to 17, 18 to 34, 35 to 51)
+A mutant counts as killed only when the suite fails on a failed assertion; a failure from a missing database stops the run.
+
+51 mutation targets found, each exactly once.
+baseline: suite passes
+01 killed   tok-alg: accept any algorithm
+      first failing test: refuses a token using HS256
+02 killed   tok-kid: accept a token with no kid
+      first failing test: refuses an unknown kid, a missing kid and any algorithm other than RS256
+03 killed   tok-unknown-kid: accept an unknown kid
+      first failing test: refuses a token with an unknown kid
+04 killed   tok-signature: skip signature verification
+      first failing test: refuses a token with a tampered payload
+05 killed   tok-exp: accept an expired token
+      first failing test: refuses an expired token
+06 killed   tok-iat: accept a token issued in the future
+      first failing test: refuses a token issued in the future, beyond the allowed drift
+07 killed   tok-auth-time: accept an auth_time in the future
+      first failing test: refuses a token issued in the future, beyond the allowed drift
+08 killed   tok-aud: accept any audience
+      first failing test: refuses a token for another audience
+09 killed   tok-iss: accept any issuer
+      first failing test: refuses a token from another issuer
+10 killed   tok-sub: accept an empty or invalid subject
+      first failing test: refuses a token with no usable subject
+11 killed   keys-throttle: refetch keys on every unknown kid
+      first failing test: does not let a stream of unknown kids hammer the key server
+12 killed   keys-expiry: never refresh an expired key set
+      first failing test: caches the key set for the max-age and refetches when a new kid appears after rotation
+13 killed   http-no-token: let a request without a token through the check
+      first failing test: refuses a request with no token
+14 killed   http-membership: skip the tenant membership check
+      first failing test: lets a member read their tenant and refuses everyone else, on every route
+15 killed   http-uuid: pass a non-UUID tenant id to the database
+      first failing test: answers 404 for a tenant id that is not a UUID
+16 killed   http-role: ignore roles everywhere
+      first failing test: lets only owners change the subscription and only owners or admins add and remove people
+17 killed   http-platform-admin: let any user write plans
+      first failing test: lets only a platform admin write plans
+
+17 of 17 mutants killed, 0 survived.
+slice 1-17 exit 0
+51 mutation targets found, each exactly once.
+baseline: suite passes
+18 killed   http-sub-owner-only: let any member change the subscription
+      first failing test: lets only owners change the subscription and only owners or admins add and remove people
+19 killed   http-add-user-role: let any member add people
+      first failing test: lets only owners change the subscription and only owners or admins add and remove people
+20 killed   http-del-user-role: let any member remove people
+      first failing test: lets only owners change the subscription and only owners or admins add and remove people
+21 killed   http-audit-role: let any member read the audit trail
+      first failing test: lets only owners change the subscription and only owners or admins add and remove people
+22 killed   http-validate-add-user: skip validation on add user
+      first failing test: rejects bad input with a 400 and a path for each problem
+23 killed   http-strict-tenant: accept unknown fields on create tenant
+      first failing test: rejects bad input with a 400 and a path for each problem
+24 killed   http-owner-role: allow creating owners through add user
+      first failing test: rejects bad input with a 400 and a path for each problem
+25 killed   scope-membership: membership lookup ignores the tenant
+      first failing test: lets a member read their tenant and refuses everyone else, on every route
+26 killed   scope-tenant-read: tenant read ignores the id
+      first failing test: lets a member read their tenant and refuses everyone else, on every route
+27 killed   scope-my-tenants: tenant list ignores the caller
+      first failing test: lists only the caller own tenants and only that tenant users
+28 killed   scope-list-users: user list ignores the tenant
+      first failing test: lists only the caller own tenants and only that tenant users
+29 killed   scope-remove-user: user removal ignores the tenant
+      first failing test: cannot remove another tenant user through your own tenant path
+30 killed   scope-get-sub: subscription read ignores the tenant
+      first failing test: keeps one tenant subscription separate from another when it is read or changed
+31 killed   scope-change-sub: subscription change ignores the tenant
+      first failing test: keeps one tenant subscription separate from another when it is read or changed
+32 killed   scope-count-add: member count ignores the tenant
+      first failing test: lists only the caller own tenants and only that tenant users
+33 killed   scope-audit-read: audit read ignores the tenant
+      first failing test: keeps each tenant audit trail separate
+34 killed   rule-member-limit: no member limit
+      first failing test: refuses a member beyond the plan limit and accepts it after an upgrade
+
+17 of 17 mutants killed, 0 survived.
+slice 18-34 exit 0
+51 mutation targets found, each exactly once.
+baseline: suite passes
+35 killed   rule-downgrade: allow a downgrade below the member count
+      first failing test: refuses a downgrade below the current member count
+36 killed   rule-inactive: allow adding members on a canceled subscription
+      first failing test: refuses new members while the subscription is canceled or past due
+37 killed   rule-owner-protected: allow removing an owner
+      first failing test: does not let an owner be removed
+38 killed   cache-read: never read from Redis
+      first failing test: serves the plan from Redis after the first read, then reflects a change made through the API
+39 killed   cache-ttl: cache entries never expire
+      first failing test: serves the plan from Redis after the first read, then reflects a change made through the API
+40 killed   cache-invalidate-all: no invalidation on plan change
+      first failing test: serves the plan from Redis after the first read, then reflects a change made through the API
+41 killed   cache-invalidate-id: invalidate only the by-code key
+      first failing test: serves the plan from Redis after the first read, then reflects a change made through the API
+42 killed   cache-invalidate-code: invalidate only the by-id key
+      first failing test: invalidates the by-code entry too
+43 killed   audit-plan-created: no audit event for a new plan
+      first failing test: records plan edits as global events with the old and new values
+44 killed   audit-plan-updated: no audit event for a plan change
+      first failing test: records plan edits as global events with the old and new values
+45 killed   audit-tenant-created: no audit event for a new tenant
+      first failing test: records exactly one event per state change, with who, what, before and after
+46 killed   audit-sub-created: no audit event for a new subscription
+      first failing test: records exactly one event per state change, with who, what, before and after
+47 killed   audit-owner-added: no audit event for the first owner
+      first failing test: records exactly one event per state change, with who, what, before and after
+48 killed   audit-sub-changed: no audit event for a subscription change
+      first failing test: records exactly one event per state change, with who, what, before and after
+49 killed   audit-user-added: no audit event for an added user
+      first failing test: records exactly one event per state change, with who, what, before and after
+50 killed   audit-user-removed: no audit event for a removed user
+      first failing test: records exactly one event per state change, with who, what, before and after
+51 killed   audit-unique-index: event id index is not unique
+      first failing test: exposes no way to change or delete an event, and indexes the event id as unique
+
+17 of 17 mutants killed, 0 survived.

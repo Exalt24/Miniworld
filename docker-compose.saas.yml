@@ -1,0 +1,43 @@
+# Databases for the multi-tenant API layer in backend/src/saas.
+# Separate project name and non-default host ports so it never collides with the
+# game stack in docker-compose.yml. Everything lives in tmpfs: `down` leaves nothing behind.
+name: miniworld-saas
+
+services:
+  saas-postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: miniworld_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${SAAS_PG_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d miniworld_saas"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  saas-redis:
+    image: redis:7-alpine
+    ports:
+      - "${SAAS_REDIS_PORT:-56379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  saas-mongo:
+    image: mongo:7
+    ports:
+      - "${SAAS_MONGO_PORT:-57017}:27017"
+    tmpfs:
+      - /data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 30

@@ -1,0 +1,9 @@
+const path = require('path');
+
+// sequelize-cli settings for the multi-tenant SaaS layer (src/saas).
+// The game indexer keeps its own SQL migrations in ./migrations; these two never share a table.
+module.exports = {
+  config: path.resolve(__dirname, 'saas-config.cjs'),
+  'migrations-path': path.resolve(__dirname, 'saas-migrations'),
+  'seeders-path': path.resolve(__dirname, 'saas-seeders'),
+};

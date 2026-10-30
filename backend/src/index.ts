@@ -13,6 +13,7 @@ import { WebSocketServer } from './websocket/server.js';
 import apiRoutes from './api/routes.js';
 import { errorHandler, notFoundHandler, requestLogger } from './api/middleware.js';
 import { runMigrations } from '../migrations/run.js';
+import { createSaasModule, type SaasModule } from './saas/index.js';
 
 const PORT = parseInt(process.env.PORT || '4000');
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
@@ -26,6 +27,11 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
 }));
+
+// The multi-tenant API (src/saas) brings its own body parser and error handler, so it mounts
+// before the game API's. It only connects when SAAS_ENABLED=true (see docs/SAAS_API.md).
+const saasSlot = express.Router();
+app.use('/api/saas', saasSlot);
 
 app.use(express.json());
 app.use(requestLogger);
@@ -56,6 +62,7 @@ app.use(errorHandler);
 
 let eventListener: EventListener | null = null;
 let wsServer: WebSocketServer | null = null;
+let saasModule: SaasModule | null = null;
 
 async function startServer() {
   try {
@@ -74,6 +81,13 @@ async function startServer() {
     } catch (error: any) {
       console.log('⚠️  Migration warning:', error.message);
       // Continue - migrations are idempotent
+    }
+
+    if (process.env.SAAS_ENABLED === 'true') {
+      console.log('\nConnecting the multi-tenant API (Postgres, Redis, MongoDB)...');
+      saasModule = await createSaasModule();
+      saasSlot.use(saasModule.router);
+      console.log('✓ Multi-tenant API mounted at /api/saas');
     }
 
     console.log('\n[3/6] Connecting to blockchain...');
@@ -143,6 +157,7 @@ async function gracefulShutdown(signal: string) {
   }
 
   console.log('Closing database connections...');
+  await saasModule?.close();
   await closePool();
   console.log('✓ Database connections closed');
 

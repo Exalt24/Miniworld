@@ -4,7 +4,7 @@
 
 ![MiniWorld running locally: a tile is claimed and an item placed from the game client, a second player's tiles appear live, then the creator dashboard shows the same events](docs/demo.gif)
 
-*Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details under [Demo recording](#demo-recording)). Everything in it runs on the local stack.*
+*Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details in [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md)). Everything in it runs on the local stack.*
 
 Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an event indexer and two React apps. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker.
 
@@ -14,12 +14,10 @@ Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an
 - [Documentation](#documentation)
 - [Architecture](#architecture)
 - [Quick start](#quick-start)
-- [Demo recording](#demo-recording)
 - [Project structure](#project-structure)
-- [Development workflow](#development-workflow)
-- [API reference](#api-reference)
+- [Development and API reference](#development-and-api-reference)
 - [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+- [Multi-tenant API layer](#multi-tenant-api-layer)
 - [Tech stack](#tech-stack)
 
 ## Overview
@@ -36,6 +34,8 @@ Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an
 - [API reference](docs/API.md): REST endpoints and WebSocket events
 - [Architecture](docs/ARCHITECTURE.md): system design, data flow and how the ABI gets distributed
 - [Deployment](docs/DEPLOYMENT.md): container orchestration and notes on deploying beyond a local machine
+- [Demo recording](docs/DEMO_RECORDING.md): how the GIF at the top was recorded
+- [Multi-tenant API](docs/SAAS_API.md): tenants, plans, subscriptions, the Redis cache, the MongoDB audit log and the Firebase token check
 - [SDK guide](sdk/README.md): installation, usage and the SDK API
 
 ## Architecture
@@ -92,7 +92,7 @@ cd Miniworld
 .\scripts\docker-deploy-all.ps1
 ```
 
-The script publishes ports 3000, 3001, 4000, 5432 and 8545 on the host, so those must be free. Reading the board and the dashboard needs no wallet. Claiming a tile or placing an item sends a transaction, so those need a browser wallet (MetaMask) on the local Hardhat network, as described in [MetaMask will not connect](#metamask-will-not-connect).
+The script publishes ports 3000, 3001, 4000, 5432 and 8545 on the host, so those must be free. Reading the board and the dashboard needs no wallet. Claiming a tile or placing an item sends a transaction, so those need a browser wallet (MetaMask) on the local Hardhat network, as described in [MetaMask will not connect](docs/DEVELOPMENT.md#metamask-will-not-connect).
 
 The script cleans the previous deployment, starts PostgreSQL and the Hardhat node, deploys the contracts, generates and distributes the ABI, builds the backend, SDK and frontends, starts the containers and checks that they are healthy. The first run takes several minutes and later runs are faster.
 
@@ -102,15 +102,6 @@ The script cleans the previous deployment, starts PostgreSQL and the Hardhat nod
 | Creator dashboard | http://localhost:3001 | View analytics |
 | Backend API | http://localhost:4000/api | API endpoints |
 | Health check | http://localhost:4000/api/health | Service status |
-
-## Demo recording
-
-The GIF at the top is the real app on a local Hardhat chain, recorded with Playwright in headless Chromium. Two parts of it are scripted, and they are the only things that are not the stock setup:
-
-- **The wallet.** `scripts/demo/wallet-stub.js` is a minimal `window.ethereum` stand-in, not MetaMask. It reports Hardhat dev account #0 and forwards every JSON-RPC call to the local node, which signs with that unlocked account. The game client's own Connect Wallet, Claim Tile and Place Item buttons are what get clicked.
-- **The second player.** The green tiles are Hardhat dev account #1, sending `claimTile` and `placeItem` transactions straight to the node from the script. The board colours them by itself when the WebSocket event arrives.
-
-I brought the stack up by running the deploy script's steps by hand (start PostgreSQL and the Hardhat node, deploy with Ignition, export `CONTRACT_ADDRESS` and `VITE_CONTRACT_ADDRESS`, build, start), with the host ports remapped because other containers on that machine held 3000 and 4000. Then `node scripts/demo/record-demo.cjs` drove it. The script needs the stack on a fresh chain, `npm install playwright` somewhere Node can resolve it, and `cd sdk && npm install` for ethers; its ports and output folder are set with `MW_GAME_URL`, `MW_DASH_URL`, `MW_RPC_URL` and `MW_OUT`.
 
 ## Project structure
 
@@ -152,143 +143,9 @@ miniworld/
 └── docker-compose.prod.yml # Production-style configuration (see docs/DEPLOYMENT.md)
 ```
 
-## Development workflow
+## Development and API reference
 
-### Contract changes
-
-```powershell
-code contracts/contracts/MiniWorld.sol
-
-# Redeploy everything
-.\scripts\docker-deploy-all.ps1
-```
-
-The script recompiles the contracts to get a new ABI, updates the contract address in the `.env` files, and rebuilds the backend, SDK and frontends against it.
-
-### Backend changes
-
-```powershell
-code backend/src/services/GameService.ts
-
-# In dev mode the backend reloads itself. To rebuild by hand:
-docker-compose build backend
-docker-compose up -d backend
-```
-
-### SDK changes
-
-```powershell
-code sdk/src/MiniWorldSDK.ts
-
-cd sdk
-npm run build
-
-# The frontends import the SDK, so rebuild them too
-docker-compose build game-client creator-dashboard
-docker-compose up -d game-client creator-dashboard
-```
-
-### Frontend changes
-
-```powershell
-code game-client/src/components/GameBoard.tsx
-
-# In dev mode Vite reloads through volume mounts. To rebuild by hand:
-docker-compose build game-client
-docker-compose up -d game-client
-```
-
-### Commands
-
-```powershell
-docker-compose ps                       # service status
-docker-compose logs -f                  # all logs
-docker-compose logs -f backend          # one service
-docker-compose down                     # stop, keep data
-docker-compose down -v                  # stop, delete data
-.\scripts\docker-status.ps1             # optional status dashboard
-docker-compose restart backend
-```
-
-## API reference
-
-Base URL: `http://localhost:4000/api`
-
-### World state
-
-**Get all tiles**: `GET /api/world` returns all 100 tiles with their current state.
-
-```json
-{
-  "tiles": [
-    {
-      "tileId": 0,
-      "owner": "0x0000000000000000000000000000000000000000",
-      "itemType": 0,
-      "x": 0,
-      "y": 0,
-      "lastModified": "1640000000"
-    }
-  ],
-  "totalTiles": 100,
-  "lastUpdated": "2025-01-20T10:30:00Z"
-}
-```
-
-**Get one tile**: `GET /api/tile/:id`, where `id` is the tile ID (0 to 99).
-
-**Get a player's tiles**: `GET /api/player/:address`, where `address` is an Ethereum address.
-
-### Activity and stats
-
-**Recent events**: `GET /api/activity?limit=50`, where `limit` is 1 to 200 and defaults to 50.
-
-**Game statistics**: `GET /api/stats`
-
-```json
-{
-  "total_claims": 42,
-  "unique_players": 15,
-  "total_events": 127,
-  "items_by_type": {
-    "0": 58,
-    "1": 12,
-    "2": 8,
-    "3": 5,
-    "4": 3,
-    "5": 14
-  }
-}
-```
-
-The item types are 0 Empty, 1 Tree, 2 Rock, 3 Flag, 4 Building and 5 Water.
-
-**Player statistics**: `GET /api/player/:address/stats`
-
-### System
-
-**Health check**: `GET /api/health`
-
-**Sync status**: `GET /api/sync-status`
-
-### WebSocket events
-
-Connect to `ws://localhost:4000`.
-
-- `tileClaimed`: a player claimed a tile
-- `itemPlaced`: a player placed an item
-- `itemRemoved`: a player removed an item
-- `worldUpdate`: a general state change
-
-```javascript
-import { io } from 'socket.io-client';
-
-const socket = io('http://localhost:4000');
-
-socket.on('tileClaimed', (data) => {
-  console.log('Tile claimed:', data.tileId, 'by', data.owner);
-});
-```
+The workflow for contract, backend, SDK and frontend changes, the day to day Docker commands and the troubleshooting notes are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The REST endpoints (world, tile, player, activity, stats, sync status, health) and the WebSocket events are in [docs/API.md](docs/API.md).
 
 ## Testing
 
@@ -323,80 +180,19 @@ The script has 79 assert calls. It needs the contract artifacts (the build copie
 
 `.\scripts\docker-deploy-all.ps1` ends with a validation step that reports PostgreSQL, the backend API, the 100-tile world state and both frontends.
 
-## Troubleshooting
+## Multi-tenant API layer
 
-### Services will not start
+The backend also carries an account layer for studios that run worlds: tenants with members, a plan and a subscription, mounted at `/api/saas` when `SAAS_ENABLED=true`. It is Express and TypeScript with PostgreSQL through the Sequelize ORM (models plus `sequelize-cli` migrations), a Redis read-through cache for plan lookups that is cleared when a plan changes, an append-only MongoDB audit log with one event per state change, and a middleware that verifies Firebase Auth ID tokens (RS256 signature against Google's published keys, issuer, audience, expiry). Every query on a tenant table is scoped by tenant id. Details are in [docs/SAAS_API.md](docs/SAAS_API.md).
 
-```powershell
-docker-compose logs
-docker-compose logs backend
-docker-compose down
-.\scripts\docker-deploy-all.ps1
+**Built and tested against:** local Postgres 18, Redis 7 and MongoDB 7 containers started from `docker-compose.saas.yml`, and a stand-in Firebase key server (`backend/tests/saas/support/keyserver.ts`) that serves a key set it generated itself and signs the test tokens. The suite covers both directions: a valid token, member and owner are accepted; a wrong tenant, an expired token, a wrong audience, a wrong issuer, a tampered signature, an unknown key id and a plan limit are refused; a plan change empties the cache entry; every change writes one audit event. The first full run on 2026-10-30 passed 51 of 51 tests, and a mutation script that deletes each of 51 guards one at a time saw a test fail every time ([test run](docs/test-runs/saas-tests-2026-10-30.txt), [mutation run](docs/test-runs/saas-mutation-2026-10-30.txt)). CI runs the same suites with the three databases as service containers.
+
+```bash
+docker compose -f docker-compose.saas.yml up -d --wait
+cd backend && npm ci
+npm test                 # 51 tests across token checks, tenant isolation, plan cache, audit log and migrations
+npm run test:mutation    # delete each guard in turn; a test must fail
+docker compose -f docker-compose.saas.yml down -v
 ```
-
-### Port already in use
-
-```powershell
-netstat -ano | findstr :3000
-netstat -ano | findstr :4000
-netstat -ano | findstr :8545
-
-# Replace <PID> with the process ID
-taskkill /PID <PID> /F
-```
-
-Or change the port in `docker-compose.yml`.
-
-### Contract address mismatch
-
-```powershell
-type backend\.env | findstr CONTRACT_ADDRESS
-type game-client\.env | findstr CONTRACT_ADDRESS
-type creator-dashboard\.env | findstr CONTRACT_ADDRESS
-
-# If they differ, redeploy
-.\scripts\docker-deploy-all.ps1
-```
-
-### Database connection errors
-
-```powershell
-docker-compose ps postgres
-docker-compose restart postgres
-
-# Or rebuild everything
-docker-compose down -v
-.\scripts\docker-deploy-all.ps1
-```
-
-### MetaMask will not connect
-
-1. Add the Hardhat network: name `Hardhat Local`, RPC URL `http://localhost:8545`, chain ID `31337`, currency symbol `ETH`.
-2. Import a test account. Open a Hardhat console with `docker-compose exec contracts npx hardhat console --network localhost` and read the account from the signers, or take a private key from the Hardhat node output.
-3. If transactions still fail after a restart, use Settings, Advanced, Reset Account in MetaMask.
-
-### ABI loading errors
-
-```powershell
-dir contracts\artifacts\contracts\MiniWorld.sol\MiniWorld.json
-
-# If it is missing, redeploy
-.\scripts\docker-deploy-all.ps1
-```
-
-### Canvas not rendering
-
-Open the browser console (F12), check that the SDK initialized and that the WebSocket connected.
-
-### Clear everything and start fresh
-
-```powershell
-docker-compose down -v
-docker-compose down --rmi all
-.\scripts\docker-deploy-all.ps1
-```
-
-This takes longer than a normal run but starts from a clean state.
 
 ## Tech stack
 

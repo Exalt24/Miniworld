@@ -1,0 +1,88 @@
+SaaS API suites, run 2026-10-30 on Windows 11, Node v24.18.0
+Databases: postgres:18-alpine, redis:7-alpine and mongo:7 from docker-compose.saas.yml (host ports 55432, 56379, 57017)
+Firebase side: stand-in key server in tests/saas/support/keyserver.ts (no Firebase project)
+Command: npm test
+
+
+> miniworld-backend@1.0.0 test
+> tsx --test --test-concurrency=1 "tests/saas/*.test.ts"
+
+▶ token checks at the HTTP edge
+  ✔ refuses a request with no token (12.1194ms)
+  ✔ accepts a valid token (39.8768ms)
+  ✔ refuses an expired token (12.9711ms)
+  ✔ refuses a token for another audience (1.4986ms)
+  ✔ refuses a token from another issuer (13.4105ms)
+  ✔ refuses a token with a tampered payload (15.7428ms)
+  ✔ refuses a token signed with a different key (46.3351ms)
+  ✔ refuses a token with an unknown kid (18.111ms)
+  ✔ refuses a token using HS256 (13.9763ms)
+  ✔ keeps working after the key server rotates its key (32.9005ms)
+✔ token checks at the HTTP edge (1231.7413ms)
+▶ tenant isolation
+  ✔ lets a member read their tenant and refuses everyone else, on every route (191.0158ms)
+  ✔ keeps one tenant subscription separate from another when it is read or changed (84.8863ms)
+  ✔ answers 404 for a tenant id that is not a UUID (2.0303ms)
+  ✔ lists only the caller own tenants and only that tenant users (93.4139ms)
+  ✔ cannot remove another tenant user through your own tenant path (70.8453ms)
+  ✔ keeps each tenant audit trail separate (37.2296ms)
+✔ tenant isolation (479.7144ms)
+▶ roles
+  ✔ lets only owners change the subscription and only owners or admins add and remove people (155.1619ms)
+  ✔ does not let an owner be removed (44.3353ms)
+  ✔ lets only a platform admin write plans (27.119ms)
+✔ roles (226.8233ms)
+▶ subscription and plan limits
+  ✔ starts a new tenant on the free plan in trial (16.7625ms)
+  ✔ refuses a member beyond the plan limit and accepts it after an upgrade (96.5718ms)
+  ✔ refuses a downgrade below the current member count (88.6705ms)
+  ✔ refuses new members while the subscription is canceled or past due (44.9773ms)
+  ✔ holds the member limit under concurrent adds (58.3892ms)
+✔ subscription and plan limits (305.5971ms)
+▶ validation and error handling
+  ✔ rejects bad input with a 400 and a path for each problem (93.2376ms)
+  ✔ rejects unreadable bodies and answers duplicates with a 409 (51.1397ms)
+  ✔ answers 404 for a plan or user that does not exist (27.285ms)
+✔ validation and error handling (171.814ms)
+▶ read-through plan cache in Redis
+  ✔ serves the plan from Redis after the first read, then reflects a change made through the API (109.0245ms)
+  ✔ invalidates the by-code entry too (21.6381ms)
+  ✔ keeps answering when Redis is unreachable (0.8743ms)
+✔ read-through plan cache in Redis (131.645ms)
+▶ append-only audit log in MongoDB
+  ✔ records exactly one event per state change, with who, what, before and after (69.1983ms)
+  ✔ records plan edits as global events with the old and new values (31.9324ms)
+  ✔ writes nothing for a refused change or a read (104.2769ms)
+  ✔ exposes no way to change or delete an event, and indexes the event id as unique (8.511ms)
+✔ append-only audit log in MongoDB (214.1405ms)
+▶ Firebase ID token verification against the stand-in key server
+  ✔ accepts a well-formed token and returns its claims (14.3118ms)
+  ✔ refuses an expired token and accepts one a second before expiry (0.7616ms)
+  ✔ refuses a token for another audience (0.4402ms)
+  ✔ refuses a token from another issuer (0.5834ms)
+  ✔ refuses a token issued in the future, beyond the allowed drift (0.7833ms)
+  ✔ refuses a token with no usable subject (0.776ms)
+  ✔ refuses a token whose payload was changed after signing (0.3601ms)
+  ✔ refuses a token signed by a key the server does not publish, even with a published kid (18.7307ms)
+  ✔ refuses an unknown kid, a missing kid and any algorithm other than RS256 (3.3293ms)
+  ✔ refuses malformed input (0.2529ms)
+  ✔ caches the key set for the max-age and refetches when a new kid appears after rotation (58.4385ms)
+  ✔ does not let a stream of unknown kids hammer the key server (48.1712ms)
+✔ Firebase ID token verification against the stand-in key server (194.8096ms)
+▶ sequelize-cli migrations
+  ✔ creates the four tables and seeds the default plans (913.8053ms)
+  ✔ enforces the constraints the models rely on (92.9956ms)
+  ✔ removes tenant rows with the tenant, and rolls back cleanly (520.9329ms)
+✔ sequelize-cli migrations (1578.3806ms)
+▶ createSaasModule wires the real connections from the environment
+  ✔ serves a signed-in request end to end and refuses an unsigned one (63.8402ms)
+  ✔ refuses to start without its settings (0.3569ms)
+✔ createSaasModule wires the real connections from the environment (1165.4108ms)
+ℹ tests 51
+ℹ suites 10
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8195.1257
