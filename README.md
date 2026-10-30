@@ -4,9 +4,9 @@
 
 ![MiniWorld running locally: a tile is claimed and an item placed from the game client, a second player's tiles appear live, then the creator dashboard shows the same events](docs/demo.gif)
 
-*Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details under [Demo recording](#demo-recording)). Nothing in it is deployed to a public network.*
+*Recorded against the local Docker stack with a scripted stand-in for a browser wallet (details under [Demo recording](#demo-recording)). Everything in it runs on the local stack.*
 
-Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an event indexer and two React apps. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker. It has not been deployed to a public network.
+Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an event indexer and two React apps. Players claim tiles on a 10x10 grid and place items on them, with all game state in a Solidity contract. A backend indexes the contract events into PostgreSQL, serves a REST API and pushes updates over WebSocket, and a TypeScript SDK wraps the contract and API for two React apps: a player client and a creator analytics dashboard. The whole stack runs locally in Docker.
 
 ## Contents
 
@@ -458,13 +458,13 @@ VITE_CONTRACT_ADDRESS=0x...  # the deploy script exports it from the contract it
 
 The compose file passes these to the Vite dev server when the container starts, so after changing one, restart the container. In a production build Vite bakes them into the JavaScript, so the frontend has to be rebuilt.
 
-## Not done
+## Next steps
 
-- No public deployment, testnet or mainnet
-- No latency measurements for the WebSocket feed or the API
-- No API authentication or rate limiting
-- No contract audit
-- The demo recording used a scripted wallet stand-in, not MetaMask itself
+- A public deployment on a testnet or mainnet
+- Latency measurements for the WebSocket feed and the API
+- API authentication and rate limiting
+- A contract audit
+- The demo recording uses a scripted stand-in for the MetaMask wallet
 
 ## License
 
