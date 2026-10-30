@@ -35,7 +35,7 @@ Multiplayer Web3 game on a local Ethereum chain: a Solidity 10x10 tile world, an
 - [Architecture](docs/ARCHITECTURE.md): system design, data flow and how the ABI gets distributed
 - [Deployment](docs/DEPLOYMENT.md): container orchestration and notes on deploying beyond a local machine
 - [Demo recording](docs/DEMO_RECORDING.md): how the GIF at the top was recorded
-- [Multi-tenant API](docs/SAAS_API.md): tenants, plans, subscriptions, the Redis cache, the MongoDB audit log and the Firebase token check
+- [Multi-tenant API](docs/SAAS_API.md): Express routes and Sequelize models with migrations on PostgreSQL, tenants, plans, subscriptions, the Redis cache, the MongoDB audit log and the Firebase token check
 - [SDK guide](sdk/README.md): installation, usage and the SDK API
 
 ## Architecture
