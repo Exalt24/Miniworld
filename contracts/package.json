@@ -30,6 +30,9 @@
     "tsx": "^4.19.2"
   },
   "overrides": {
-    "serialize-javascript": "7.1.2"
+    "mocha": {
+      "minimatch": "^11.0.5"
+    },
+    "zod": "^4.6.7"
   }
 }
