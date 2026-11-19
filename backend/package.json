@@ -23,11 +23,11 @@
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^18.0.9",
+    "dotenv": "^18.0.10",
     "ethers": "^6.13.7",
     "express": "^5.1.0",
     "ioredis": "^6.0.0",
-    "mongodb": "^7.8.0",
+    "mongodb": "^7.9.0",
     "pg": "^8.13.1",
     "sequelize": "^6.37.8",
     "socket.io": "^4.8.1",
